@@ -120,6 +120,15 @@ export const registerEmployee = async (req, res) => {
     });
   } catch (error) {
     console.error("[Employee Registration Error]:", error);
+
+    if (error.code === "P2002") {
+      const duplicateField = error.meta?.target ? error.meta.target : "field";
+      return res.status(409).json({
+        status: "fail",
+        message: `Registration failed. An employee with this ${duplicateField} already exists.`,
+      });
+    }
+
     return res.status(error.statusCode || 500).json({
       status: "fail",
       message: error.message || "Internal Server Error",
