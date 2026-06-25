@@ -17,15 +17,25 @@ const fileFilter = (req, file, cb) => {
     }
 };
 
-export const uploadEmployeeDocs = multer({
+const upload = multer({
     storage,
     fileFilter,
-    limits: { fileSize: 5 * 1024 * 1024 },  
-}).fields([
+    limits: { fileSize: 5 * 1024 * 1024 }, // 5MB limit
+});
+
+export const uploadEmployeeDocs = upload.fields([
     { name: 'profilePhoto', maxCount: 1 },
     { name: 'aadhaarFront', maxCount: 1 },
     { name: 'aadhaarBack', maxCount: 1 },
     { name: 'panPhoto', maxCount: 1 },
     { name: 'addressProof', maxCount: 1 },
     { name: 'bankDocument', maxCount: 1 },
+]);
+
+export const uploadClientDocs = upload.fields([
+    { name: 'logo', maxCount: 1 },
+    { name: 'msa', maxCount: 1 },
+    { name: 'nda', maxCount: 1 },
+    { name: 'taxCert', maxCount: 1 },
+    { name: 'brandAssets', maxCount: 1 }
 ]);

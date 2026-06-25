@@ -32,6 +32,29 @@ enum WorkMode {
   REMOTE
 }
 
+enum ClientStatus {
+  PROSPECT
+  ACTIVE
+  PAUSED
+  CHURNED
+}
+
+enum EngagementType {
+  PROJECT
+  RETAINER
+  RETAINER_BUILD
+}
+
+// Embedded Documents
+type AdditionalContact {
+  name  String
+  role  String
+  email String
+  phone String
+  tag   String // 'billing', 'technical', 'escalation'
+}
+
+
 model User {
   id        String   @id @default(auto()) @map("_id") @db.ObjectId
   email     String   @unique
@@ -42,6 +65,7 @@ model User {
   updatedAt DateTime @updatedAt
 
   employeeProfile EmployeeProfile?
+  clientProfile   ClientProfile?
   
   @@map("users")
 }
@@ -101,4 +125,76 @@ model EmployeeProfile {
   updatedAt DateTime @updatedAt
 
   @@map("employee_profiles")
+}
+
+
+model ClientProfile {
+  id                String   @id @default(auto()) @map("_id") @db.ObjectId
+  userId            String   @unique @db.ObjectId
+  user              User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  // Company Basics
+  companyName       String   // Required
+  brandName         String?
+  logoUrl           String?  // csu
+  website           String?
+  industry          String?
+  companySize       String?
+  foundedYear       Int?
+  description       String?
+  linkedin          String?
+
+  // Primary Contact
+  contactName       String   // Required
+  contactEmail      String   // Required
+  contactPhone      String   // Required
+  contactDesignation String?
+  contactMethod     String?
+  timezone          String?
+
+  // Additional Contacts (Embedded Array)
+  additionalContacts AdditionalContact[] 
+
+  // Addresses
+  registeredAddress String?
+  operatingAddress  String?
+  country           String?
+
+  // Billing & Legal
+  billingCurrency   String?
+  billingContact    String?
+  billingEmail      String?
+  taxId             String?  // Dynamic based on region
+  paymentTerms      String?
+  paymentMethod     String?
+  poRequired        Boolean? @default(false)
+
+  // Relationship / Commercial
+  clientSince       DateTime?
+  source            String?
+  accountOwner      String?
+  engagementType    EngagementType?
+  status            ClientStatus?   @default(PROSPECT)
+
+  // Document URLs (Drive URLs)
+  msaUrl            String?
+  ndaUrl            String?
+  taxCertUrl        String?
+  brandAssetsUrl    String?
+
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  @@map("client_profiles")
+}
+
+model CompanyRole {
+  id          String   @id @default(auto()) @map("_id") @db.ObjectId
+  name        String   @unique  
+  description String?   
+  
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@map("company_roles")
 }
