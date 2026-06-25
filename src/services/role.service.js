@@ -1,4 +1,5 @@
 import prisma from '../config/prisma.js';
+import { DEFAULT_PERMISSIONS } from '../constants/defaultPermissions.js';
 
 export const createRole = async (data) => {
     return await prisma.companyRole.create({ data });
@@ -56,5 +57,29 @@ export const deleteRole = async (id) => {
 
     return await prisma.companyRole.delete({
         where: { id }
+    });
+};
+
+// permissions toggle 
+export const getRolePermissions = async (id) => {
+    const role = await prisma.companyRole.findUnique({
+        where: { id },
+        select: { id: true, name: true, permissions: true }
+    });
+
+    if (!role) throw new Error("Role not found");
+
+    return {
+        id: role.id,
+        name: role.name,
+        permissions: role.permissions || DEFAULT_PERMISSIONS
+    };
+};
+
+export const updateRolePermissions = async (id, permissionsData) => {
+    return await prisma.companyRole.update({
+        where: { id },
+        data: { permissions: permissionsData },
+        select: { id: true, name: true, permissions: true } 
     });
 };

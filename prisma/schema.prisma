@@ -192,6 +192,8 @@ model CompanyRole {
   id          String   @id @default(auto()) @map("_id") @db.ObjectId
   name        String   @unique  
   description String?   
+
+  permissions Json?
   
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
