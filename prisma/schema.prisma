@@ -1,0 +1,104 @@
+datasource db {
+  provider = "mongodb"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+enum Role {
+  ADMIN
+  EMPLOYEE
+  CLIENT
+}
+
+enum Gender {
+  MALE
+  FEMALE
+  OTHER
+}
+
+enum EmploymentType {
+  FULL_TIME
+  PART_TIME
+  INTERN
+  CONTRACTOR
+}
+
+enum WorkMode {
+  ONSITE
+  HYBRID
+  REMOTE
+}
+
+model User {
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  email     String   @unique
+  password  String   // Hashed password
+  role      Role     @default(EMPLOYEE)
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  employeeProfile EmployeeProfile?
+  
+  @@map("users")
+}
+
+model EmployeeProfile {
+  id              String   @id @default(auto()) @map("_id") @db.ObjectId
+  userId          String   @unique @db.ObjectId
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  // Personal & Identity
+  legalName       String
+  preferredName   String?
+  dob             DateTime
+  gender          Gender
+  profilePhotoUrl String?
+  personalMobile  String
+  bloodGroup      String?
+
+  // Emergency Contact
+  emergencyName     String
+  emergencyRelation String
+  emergencyPhone    String
+
+  // KYC & Identity Documents
+  aadhaarNumber     String   @unique 
+  aadhaarFrontUrl   String   // csu
+  aadhaarBackUrl    String   // csu
+  panNumber         String   @unique
+  panPhotoUrl       String   // csu
+
+  // Address
+  currentAddress    String
+  addressProofUrl   String   // csu
+  permanentAddress  String
+
+  // Bank & Payroll
+  accountName       String
+  bankName          String
+  accountNumber     String
+  ifscCode          String
+  branchName        String
+  bankDocumentUrl   String   // Passbook or Cancelled Cheque URL
+
+  // Employment Details
+  designation       String
+  department        String
+  reportingManager  String?  // Can be linked to another User ID later
+  employmentType    EmploymentType
+  workMode          WorkMode
+  baseLocation      String
+  dateOfJoining     DateTime
+  probationDays     Int       
+  totalExperience   Float     
+  relevantExp       Float
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("employee_profiles")
+}
