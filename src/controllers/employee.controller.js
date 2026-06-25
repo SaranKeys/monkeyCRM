@@ -1,6 +1,7 @@
 import * as employeeService from "../services/employee.service.js";
 import { uploadFileToDrive } from "../services/drive.service.js";
 import { registerEmployeeSchema } from "../validations/employee.validation.js";
+import prisma from "../config/prisma.js";
 
 export const registerEmployee = async (req, res) => {
   try {

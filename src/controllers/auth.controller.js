@@ -1,16 +1,16 @@
 import * as authService from '../services/auth.service.js';
 
-export const handleAdminLogin = async (req, res, next) => {
+export const handleLogin = async (req, res, next) => {
     try {
         const { email, password } = req.body;
 
-        const result = await authService.loginAdmin(email, password);
+        const result = await authService.loginUser(email, password);
 
         return res.status(200).json({
             status: 'success',
-            message: 'Admin authentication successful',
+            message: 'Authentication successful',
             token: result.token,
-            user: result.user
+            data: result.user  
         });
     } catch (error) {
         return res.status(error.statusCode || 500).json({

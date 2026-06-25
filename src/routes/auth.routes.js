@@ -8,7 +8,7 @@ const router = Router();
 router.post(
     '/login', 
     validateRequest(loginSchema), 
-    authController.handleAdminLogin
+    authController.handleLogin
 );
 
 export default router;
