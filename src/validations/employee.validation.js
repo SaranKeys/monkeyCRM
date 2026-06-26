@@ -41,3 +41,12 @@ export const registerEmployeeSchema = z.object({
         relevantExp: z.coerce.number().nonnegative()
     })
 });
+
+
+export const updateEmployeeSchema = z.object({
+    body: registerEmployeeSchema.shape.body.partial().omit({ 
+        email: true, 
+        password: true, 
+        role: true 
+    }) 
+});

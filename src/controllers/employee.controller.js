@@ -1,6 +1,6 @@
 import * as employeeService from "../services/employee.service.js";
 import { uploadFileToDrive } from "../services/drive.service.js";
-import { registerEmployeeSchema } from "../validations/employee.validation.js";
+import { registerEmployeeSchema, updateEmployeeSchema } from "../validations/employee.validation.js";
 import prisma from "../config/prisma.js";
 
 export const registerEmployee = async (req, res) => {
@@ -133,5 +133,93 @@ export const registerEmployee = async (req, res) => {
       status: "fail",
       message: error.message || "Internal Server Error",
     });
+  }
+};
+
+export const getAllEmployees = async (req, res) => {
+  try {
+    const employees = await employeeService.getAllEmployees();
+    return res.status(200).json({ status: "success", data: employees });
+  } catch (error) {
+    return res.status(500).json({ status: "fail", message: error.message });
+  }
+};
+
+export const getEmployeeById = async (req, res) => {
+  try {
+    const employee = await employeeService.getEmployeeById(req.params.id);
+    return res.status(200).json({ status: "success", data: employee });
+  } catch (error) {
+    if (error.code === "P2025") {
+      return res
+        .status(404)
+        .json({ status: "fail", message: "Employee not found." });
+    }
+    return res.status(500).json({ status: "fail", message: error.message });
+  }
+};
+
+export const updateEmployee = async (req, res) => {
+  try {
+    const validationResult = updateEmployeeSchema.safeParse(req);
+    if (!validationResult.success) {
+      const structuralErrors = validationResult.error.issues.map((e) => ({
+        field: e.path.join("."),
+        message: e.message,
+      }));
+      return res.status(400).json({ status: "fail", errors: structuralErrors });
+    }
+
+    const validatedData = validationResult.data.body;
+
+    if (validatedData.designation) {
+      const roleExists = await prisma.companyRole.findUnique({
+        where: { name: validatedData.designation },
+      });
+      if (!roleExists) {
+        return res.status(400).json({
+          status: "fail",
+          message: `The designation '${validatedData.designation}' does not exist.`,
+        });
+      }
+    }
+
+    const updatedEmployee = await employeeService.updateEmployee(
+      req.params.id,
+      validatedData,
+    );
+
+    return res.status(200).json({
+      status: "success",
+      message: "Employee updated successfully.",
+      data: updatedEmployee,
+    });
+  } catch (error) {
+    if (error.code === "P2002") {
+      const duplicateField = error.meta?.target ? error.meta.target : "field";
+      return res.status(409).json({
+        status: "fail",
+        message: `Update failed. An employee with this ${duplicateField} already exists.`,
+      });
+    }
+    return res.status(500).json({ status: "fail", message: error.message });
+  }
+};
+
+export const deleteEmployee = async (req, res) => {
+  try {
+    const deletedRecord = await employeeService.deleteEmployee(req.params.id);
+
+    return res.status(200).json({
+      status: "success",
+      message: `Employee '${deletedRecord.employeeProfile.legalName}' and their account credentials were deleted successfully.`,
+    });
+  } catch (error) {
+    if (error.code === "P2025") {
+      return res
+        .status(404)
+        .json({ status: "fail", message: "Employee not found." });
+    }
+    return res.status(500).json({ status: "fail", message: error.message });
   }
 };

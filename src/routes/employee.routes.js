@@ -12,4 +12,12 @@ router.post(
     uploadEmployeeDocs,           
     employeeController.registerEmployee 
 );
+
+router.get('/', employeeController.getAllEmployees);
+router.get('/:id', employeeController.getEmployeeById);
+
+router.put('/:id', employeeController.updateEmployee);
+router.delete('/:id', employeeController.deleteEmployee);
+
+
 export default router;

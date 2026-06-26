@@ -68,3 +68,62 @@ export const createEmployee = async (employeeData, documentUrls) => {
     return { user: newUser, profile: newProfile };
   });
 };
+
+export const getAllEmployees = async () => {
+  return await prisma.employeeProfile.findMany({
+    orderBy: { createdAt: "desc" },
+    include: {
+      user: {
+        select: { email: true, isActive: true, role: true },
+      },
+    },
+  });
+};
+
+export const getEmployeeById = async (profileId) => {
+  const employee = await prisma.employeeProfile.findUnique({
+    where: { id: profileId },
+    include: {
+      user: {
+        select: { email: true, isActive: true, role: true },
+      },
+    },
+  });
+
+  if (!employee) {
+    const err = new Error("Employee not found");
+    err.code = "P2025";
+    throw err;
+  }
+  return employee;
+};
+
+export const updateEmployee = async (profileId, updateData) => {
+  return await prisma.employeeProfile.update({
+    where: { id: profileId },
+    data: updateData,
+    include: {
+      user: {
+        select: { email: true, isActive: true },
+      },
+    },
+  });
+};
+
+export const deleteEmployee = async (profileId) => {
+  const profile = await prisma.employeeProfile.findUnique({
+    where: { id: profileId },
+  });
+
+  if (!profile) {
+    const err = new Error("Employee not found");
+    err.code = "P2025";
+    throw err;
+  }
+
+  const deletedUser = await prisma.user.delete({
+    where: { id: profile.userId },
+    include: { employeeProfile: true },
+  });
+  return deletedUser;
+};
