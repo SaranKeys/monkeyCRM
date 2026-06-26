@@ -46,3 +46,11 @@ export const registerClientSchema = z.object({
         status: z.enum(['PROSPECT', 'ACTIVE', 'PAUSED', 'CHURNED']).optional().default('PROSPECT')
     })
 });
+
+export const updateClientSchema = z.object({
+    body: registerClientSchema.shape.body.partial().omit({ 
+        email: true, 
+        password: true, 
+        role: true 
+    }) 
+});

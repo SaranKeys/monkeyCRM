@@ -5,12 +5,19 @@ import { authenticate, restrictTo } from '../middlewares/auth.middleware.js';
 
 const router = Router();
 
-router.post(
-    '/register',
-    authenticate, 
-    restrictTo('ADMIN'), 
-    uploadClientDocs,            
-    clientController.registerClient 
-);
+router.use(authenticate, restrictTo('ADMIN'));
+
+router.post('/register', uploadClientDocs, clientController.registerClient);
+
+router.get('/', clientController.getAllClients);
+router.get('/:id', clientController.getClientById);
+
+// just for fields (raw)
+router.put('/:id', clientController.updateClient);
+
+// for files/documents (form data)
+router.patch('/:id/documents', uploadClientDocs, clientController.updateClientDocuments);
+
+router.delete('/:id', clientController.deleteClient);
 
 export default router;
