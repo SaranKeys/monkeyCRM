@@ -17,6 +17,8 @@ router.get('/', employeeController.getAllEmployees);
 router.get('/:id', employeeController.getEmployeeById);
 
 router.put('/:id', employeeController.updateEmployee);
+router.patch('/:id/documents', uploadEmployeeDocs, employeeController.updateEmployeeDocuments);
+
 router.delete('/:id', employeeController.deleteEmployee);
 
 

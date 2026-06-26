@@ -1,6 +1,9 @@
 import * as employeeService from "../services/employee.service.js";
 import { uploadFileToDrive } from "../services/drive.service.js";
-import { registerEmployeeSchema, updateEmployeeSchema } from "../validations/employee.validation.js";
+import {
+  registerEmployeeSchema,
+  updateEmployeeSchema,
+} from "../validations/employee.validation.js";
 import prisma from "../config/prisma.js";
 
 export const registerEmployee = async (req, res) => {
@@ -203,6 +206,63 @@ export const updateEmployee = async (req, res) => {
       });
     }
     return res.status(500).json({ status: "fail", message: error.message });
+  }
+};
+
+export const updateEmployeeDocuments = async (req, res) => {
+  try {
+    if (!req.files || Object.keys(req.files).length === 0) {
+      return res
+        .status(400)
+        .json({ status: "fail", message: "No files provided for update." });
+    }
+
+    const employee = await employeeService.getEmployeeById(req.params.id);
+    const cleanName = employee.legalName.trim().replace(/\s+/g, "_");
+    const filePrefix = `${cleanName}_${employee.personalMobile}_UPDATED`;
+
+    const newDocumentUrls = {};
+
+    const fileFields = [
+      "profilePhoto",
+      "aadhaarFront",
+      "aadhaarBack",
+      "panPhoto",
+      "addressProof",
+      "bankDocument",
+    ];
+
+    for (const field of fileFields) {
+      if (req.files[field]) {
+        const file = req.files[field][0];
+        const url = await uploadFileToDrive(
+          file.buffer,
+          file.originalname,
+          file.mimetype,
+          filePrefix,
+        );
+        newDocumentUrls[`${field}Url`] = url;
+      }
+    }
+
+    const updatedEmployee = await employeeService.updateEmployee(
+      req.params.id,
+      newDocumentUrls,
+    );
+
+    return res.status(200).json({
+      status: "success",
+      message: "Employee documents updated successfully.",
+      data: updatedEmployee,
+    });
+  } catch (error) {
+    console.error("[Document Update Error]:", error);
+    return res
+      .status(500)
+      .json({
+        status: "fail",
+        message: error.message || "Internal Server Error",
+      });
   }
 };
 
