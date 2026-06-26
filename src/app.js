@@ -7,6 +7,7 @@ import authRoutes from "./routes/auth.routes.js"
 import employeeRoutes from "./routes/employee.routes.js"
 import clientRoutes from "./routes/client.route.js"
 import roleRoutes from "./routes/role.route.js"
+import projectRoutes from "./routes/project.route.js"
 
 const app = express();
 
@@ -29,6 +30,7 @@ app.use('/api/auth', authRoutes);
 app.use('/api/employees', employeeRoutes);
 app.use('/api/clients', clientRoutes);
 app.use('/api/roles', roleRoutes)
+app.use('/api/projects', projectRoutes)
 
 app.use(notFoundHandler);
 app.use(globalErrorHandler);

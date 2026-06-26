@@ -45,6 +45,40 @@ enum EngagementType {
   RETAINER_BUILD
 }
 
+enum ProjectType {
+  WEBSITE
+  WEB_APP
+  CRM
+  E_COMMERCE
+  MOBILE_APP
+  DIGITAL_MARKETING
+  MAINTENANCE
+  AUTOMATION
+  AI_WORKFLOW
+  AI_AGENT
+}
+
+enum ProjectPriority {
+  LOW
+  MEDIUM
+  HIGH
+  URGENT
+}
+
+enum ProjectStatus {
+  DRAFT
+  ACTIVE
+  ON_HOLD
+  COMPLETED
+  CANCELLED
+}
+
+enum MilestoneType {
+  INTERNAL_MEETING
+  CLIENT_MEETING
+  MILESTONE
+}
+
 // Embedded Documents
 type AdditionalContact {
   name  String
@@ -54,11 +88,10 @@ type AdditionalContact {
   tag   String // 'billing', 'technical', 'escalation'
 }
 
-
 model User {
   id        String   @id @default(auto()) @map("_id") @db.ObjectId
   email     String   @unique
-  password  String   // Hashed password
+  password  String // Hashed password
   role      Role     @default(EMPLOYEE)
   isActive  Boolean  @default(true)
   createdAt DateTime @default(now())
@@ -66,14 +99,14 @@ model User {
 
   employeeProfile EmployeeProfile?
   clientProfile   ClientProfile?
-  
+
   @@map("users")
 }
 
 model EmployeeProfile {
-  id              String   @id @default(auto()) @map("_id") @db.ObjectId
-  userId          String   @unique @db.ObjectId
-  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  id     String @id @default(auto()) @map("_id") @db.ObjectId
+  userId String @unique @db.ObjectId
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   // Personal & Identity
   legalName       String
@@ -90,36 +123,42 @@ model EmployeeProfile {
   emergencyPhone    String
 
   // KYC & Identity Documents
-  aadhaarNumber     String   @unique 
-  aadhaarFrontUrl   String   // csu
-  aadhaarBackUrl    String   // csu
-  panNumber         String   @unique
-  panPhotoUrl       String   // csu
+  aadhaarNumber   String @unique
+  aadhaarFrontUrl String // csu
+  aadhaarBackUrl  String // csu
+  panNumber       String @unique
+  panPhotoUrl     String // csu
 
   // Address
-  currentAddress    String
-  addressProofUrl   String   // csu
-  permanentAddress  String
+  currentAddress   String
+  addressProofUrl  String // csu
+  permanentAddress String
 
   // Bank & Payroll
-  accountName       String
-  bankName          String
-  accountNumber     String
-  ifscCode          String
-  branchName        String
-  bankDocumentUrl   String   // Passbook or Cancelled Cheque URL
+  accountName     String
+  bankName        String
+  accountNumber   String
+  ifscCode        String
+  branchName      String
+  bankDocumentUrl String // Passbook or Cancelled Cheque URL
 
   // Employment Details
-  designation       String
-  department        String
-  reportingManager  String?  // Can be linked to another User ID later
-  employmentType    EmploymentType
-  workMode          WorkMode
-  baseLocation      String
-  dateOfJoining     DateTime
-  probationDays     Int       
-  totalExperience   Float     
-  relevantExp       Float
+  designation      String
+  department       String
+  reportingManager String? // Can be linked to another User ID later
+  employmentType   EmploymentType
+  workMode         WorkMode
+  baseLocation     String
+  dateOfJoining    DateTime
+  probationDays    Int
+  totalExperience  Float
+  relevantExp      Float
+
+  // Relations to Projects
+  ledProjects Project[] @relation("ProjectLead")
+
+  projectIds String[]  @db.ObjectId
+  projects   Project[] @relation("ProjectMembers", fields: [projectIds], references: [id])
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -127,33 +166,32 @@ model EmployeeProfile {
   @@map("employee_profiles")
 }
 
-
 model ClientProfile {
-  id                String   @id @default(auto()) @map("_id") @db.ObjectId
-  userId            String   @unique @db.ObjectId
-  user              User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  id     String @id @default(auto()) @map("_id") @db.ObjectId
+  userId String @unique @db.ObjectId
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   // Company Basics
-  companyName       String   // Required
-  brandName         String?
-  logoUrl           String?  // csu
-  website           String?
-  industry          String?
-  companySize       String?
-  foundedYear       Int?
-  description       String?
-  linkedin          String?
+  companyName String // Required
+  brandName   String?
+  logoUrl     String? // csu
+  website     String?
+  industry    String?
+  companySize String?
+  foundedYear Int?
+  description String?
+  linkedin    String?
 
   // Primary Contact
-  contactName       String   // Required
-  contactEmail      String   // Required
-  contactPhone      String   // Required
+  contactName        String // Required
+  contactEmail       String // Required
+  contactPhone       String // Required
   contactDesignation String?
-  contactMethod     String?
-  timezone          String?
+  contactMethod      String?
+  timezone           String?
 
   // Additional Contacts (Embedded Array)
-  additionalContacts AdditionalContact[] 
+  additionalContacts AdditionalContact[]
 
   // Addresses
   registeredAddress String?
@@ -161,42 +199,103 @@ model ClientProfile {
   country           String?
 
   // Billing & Legal
-  billingCurrency   String?
-  billingContact    String?
-  billingEmail      String?
-  taxId             String?  // Dynamic based on region
-  paymentTerms      String?
-  paymentMethod     String?
-  poRequired        Boolean? @default(false)
+  billingCurrency String?
+  billingContact  String?
+  billingEmail    String?
+  taxId           String? // Dynamic based on region
+  paymentTerms    String?
+  paymentMethod   String?
+  poRequired      Boolean? @default(false)
 
   // Relationship / Commercial
-  clientSince       DateTime?
-  source            String?
-  accountOwner      String?
-  engagementType    EngagementType?
-  status            ClientStatus?   @default(PROSPECT)
+  clientSince    DateTime?
+  source         String?
+  accountOwner   String?
+  engagementType EngagementType?
+  status         ClientStatus?   @default(PROSPECT)
 
   // Document URLs (Drive URLs)
-  msaUrl            String?
-  ndaUrl            String?
-  taxCertUrl        String?
-  brandAssetsUrl    String?
+  msaUrl         String?
+  ndaUrl         String?
+  taxCertUrl     String?
+  brandAssetsUrl String?
 
-  createdAt         DateTime @default(now())
-  updatedAt         DateTime @updatedAt
+  // Relation to Projects
+  projects Project[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@map("client_profiles")
 }
 
 model CompanyRole {
-  id          String   @id @default(auto()) @map("_id") @db.ObjectId
-  name        String   @unique  
-  description String?   
+  id          String  @id @default(auto()) @map("_id") @db.ObjectId
+  name        String  @unique
+  description String?
 
   permissions Json?
-  
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@map("company_roles")
+}
+
+//  project flow 
+model Project {
+  id             String          @id @default(auto()) @map("_id") @db.ObjectId
+  // basic Details
+  name           String
+  description    String?
+  type           ProjectType
+  priority       ProjectPriority
+  engagementType EngagementType
+  status         ProjectStatus   @default(ACTIVE)
+
+  // relation to Client
+  clientId String        @db.ObjectId
+  client   ClientProfile @relation(fields: [clientId], references: [id])
+
+  clientRequirements Json?
+
+  estimatedHours     Int?
+  techStack          String[]
+  customInstructions String?
+
+  // "+1 / +2" Resource Counters
+  requiredResources Json?
+
+  // Relation: Project Lead 
+  leadId String?          @db.ObjectId
+  lead   EmployeeProfile? @relation("ProjectLead", fields: [leadId], references: [id])
+
+  // Relation: Project Members
+  memberIds String[]          @db.ObjectId
+  members   EmployeeProfile[] @relation("ProjectMembers", fields: [memberIds], references: [id])
+
+  // Project Runway
+  milestones ProjectMilestone[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("projects")
+}
+
+model ProjectMilestone {
+  id          String        @id @default(auto()) @map("_id") @db.ObjectId
+  title       String
+  description String?
+  type        MilestoneType
+  dueDate     DateTime
+  isCompleted Boolean       @default(false)
+
+  projectId String  @db.ObjectId
+  project   Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("project_milestones")
 }
