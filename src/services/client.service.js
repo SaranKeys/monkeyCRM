@@ -65,13 +65,47 @@ export const createClient = async (clientData, fileUrls) => {
   return record;
 };
 
-export const getAllClients = async () => {
-    return await prisma.clientProfile.findMany({
-        orderBy: { createdAt: 'desc' },
-        include: {
-            user: { select: { email: true, isActive: true } }
+export const getAllClients = async (page = 1, limit = 10, searchTerm = "") => {
+    const skip = (page - 1) * limit;
+
+    const whereClause = searchTerm ? {
+        OR: [
+            { companyName: { contains: searchTerm, mode: 'insensitive' } },
+            { contactName: { contains: searchTerm, mode: 'insensitive' } },
+            { contactEmail: { contains: searchTerm, mode: 'insensitive' } },
+            { industry: { contains: searchTerm, mode: 'insensitive' } }
+        ]
+    } : {};
+
+    const [totalClients, clients] = await Promise.all([
+        prisma.clientProfile.count({ 
+            where: whereClause 
+        }),
+        prisma.clientProfile.findMany({
+            where: whereClause,
+            skip: skip,
+            take: limit,
+            orderBy: { createdAt: 'desc' },
+            include: {
+                user: { select: { email: true, isActive: true } }
+            }
+        })
+    ]);
+
+    const totalPages = Math.ceil(totalClients / limit);
+
+    return {
+        clients,
+        pagination: {
+            totalRecords: totalClients,
+            currentPage: page,
+            limit: limit,
+            totalPages: totalPages,
+            hasNextPage: page < totalPages,
+            hasPrevPage: page > 1,
+            searchTerm: searchTerm || null
         }
-    });
+    };
 };
 
 export const getClientById = async (profileId) => {

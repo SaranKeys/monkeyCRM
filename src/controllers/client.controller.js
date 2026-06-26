@@ -1,6 +1,6 @@
 import * as clientService from "../services/client.service.js";
 import { uploadFileToDrive } from "../services/drive.service.js";
-import { registerClientSchema } from "../validations/client.validation.js";
+import { registerClientSchema, updateClientSchema } from "../validations/client.validation.js";
 
 export const registerClient = async (req, res) => {
   try {
@@ -109,12 +109,21 @@ export const registerClient = async (req, res) => {
 };
 
 export const getAllClients = async (req, res) => {
-  try {
-    const clients = await clientService.getAllClients();
-    return res.status(200).json({ status: "success", data: clients });
-  } catch (error) {
-    return res.status(500).json({ status: "fail", message: error.message });
-  }
+    try {
+        const page = parseInt(req.query.page, 10) || 1;
+        const limit = parseInt(req.query.limit, 10) || 10;
+        const search = req.query.search || "";
+
+        const result = await clientService.getAllClients(page, limit, search);
+
+        return res.status(200).json({ 
+            status: 'success', 
+            data: result.clients,
+            pagination: result.pagination 
+        });
+    } catch (error) {
+        return res.status(500).json({ status: 'fail', message: error.message });
+    }
 };
 
 export const getClientById = async (req, res) => {
