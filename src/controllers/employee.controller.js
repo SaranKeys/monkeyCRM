@@ -141,8 +141,18 @@ export const registerEmployee = async (req, res) => {
 
 export const getAllEmployees = async (req, res) => {
   try {
-    const employees = await employeeService.getAllEmployees();
-    return res.status(200).json({ status: "success", data: employees });
+    const page = parseInt(req.query.page, 10) || 1;
+    const limit = parseInt(req.query.limit, 10) || 10;
+
+    const search = req.query.search || "";
+
+    const result = await employeeService.getAllEmployees(page, limit, search);
+
+    return res.status(200).json({
+      status: "success",
+      data: result.employees,
+      pagination: result.pagination,
+    });
   } catch (error) {
     return res.status(500).json({ status: "fail", message: error.message });
   }
@@ -257,12 +267,10 @@ export const updateEmployeeDocuments = async (req, res) => {
     });
   } catch (error) {
     console.error("[Document Update Error]:", error);
-    return res
-      .status(500)
-      .json({
-        status: "fail",
-        message: error.message || "Internal Server Error",
-      });
+    return res.status(500).json({
+      status: "fail",
+      message: error.message || "Internal Server Error",
+    });
   }
 };
 

@@ -69,15 +69,48 @@ export const createEmployee = async (employeeData, documentUrls) => {
   });
 };
 
-export const getAllEmployees = async () => {
-  return await prisma.employeeProfile.findMany({
-    orderBy: { createdAt: "desc" },
-    include: {
-      user: {
-        select: { email: true, isActive: true, role: true },
-      },
-    },
-  });
+export const getAllEmployees = async (page = 1, limit = 10, searchTerm = "") => {
+    const skip = (page - 1) * limit;
+
+    const whereClause = searchTerm ? {
+        OR: [
+            { legalName: { contains: searchTerm, mode: 'insensitive' } },
+            { designation: { contains: searchTerm, mode: 'insensitive' } },
+            { personalMobile: { contains: searchTerm, mode: 'insensitive' } }
+        ]
+    } : {};  
+
+    const [totalEmployees, employees] = await Promise.all([
+        prisma.employeeProfile.count({ 
+            where: whereClause 
+        }), 
+        prisma.employeeProfile.findMany({
+            where: whereClause,
+            skip: skip,
+            take: limit,
+            orderBy: { createdAt: 'desc' },
+            include: {
+                user: {
+                    select: { email: true, isActive: true, role: true }
+                }
+            }
+        })
+    ]);
+
+    const totalPages = Math.ceil(totalEmployees / limit);
+
+    return {
+        employees,
+        pagination: {
+            totalRecords: totalEmployees,
+            currentPage: page,
+            limit: limit,
+            totalPages: totalPages,
+            hasNextPage: page < totalPages,
+            hasPrevPage: page > 1,
+            searchTerm: searchTerm || null  
+        }
+    };
 };
 
 export const getEmployeeById = async (profileId) => {
