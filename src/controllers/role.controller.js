@@ -18,12 +18,10 @@ export const createRole = async (req, res) => {
     return res.status(201).json({ status: "success", data: role });
   } catch (error) {
     if (error.code === "P2002") {
-      return res
-        .status(409)
-        .json({
-          status: "fail",
-          message: "A role with this name already exists.",
-        });
+      return res.status(409).json({
+        status: "fail",
+        message: "A role with this name already exists.",
+      });
     }
     return res.status(500).json({ status: "fail", message: error.message });
   }
@@ -80,12 +78,10 @@ export const deleteRole = async (req, res) => {
       return res.status(400).json({ status: "fail", message: error.message });
     }
     console.error("[Delete Role Error]:", error);
-    return res
-      .status(500)
-      .json({
-        status: "fail",
-        message: error.message || "Internal Server Error",
-      });
+    return res.status(500).json({
+      status: "fail",
+      message: error.message || "Internal Server Error",
+    });
   }
 };
 
