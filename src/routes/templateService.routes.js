@@ -9,4 +9,7 @@ router.post('/create', authenticate, restrictTo('ADMIN'), serviceController.crea
 // to fetch fields for creation of project
 router.get('/', authenticate, restrictTo('ADMIN'), serviceController.getActiveServices);
 
+router.put('/:id', authenticate, restrictTo('ADMIN'), serviceController.updateService);
+router.delete('/:id', authenticate, restrictTo('ADMIN'), serviceController.deleteService);
+
 export default router;

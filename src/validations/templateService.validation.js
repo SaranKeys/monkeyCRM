@@ -12,3 +12,12 @@ export const createServiceSchema = z.object({
         page2Fields: z.array(page2FieldSchema).default([])
     })
 });
+
+
+export const updateServiceSchema = z.object({
+    body: z.object({
+        name: z.string().min(1, "Service name cannot be empty").optional(),
+        icon: z.string().min(1, "Icon name cannot be empty").optional(),
+        page2Fields: z.array(page2FieldSchema).optional(),
+    })
+});

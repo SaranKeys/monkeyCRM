@@ -15,6 +15,7 @@ export const createProject = async (projectData) => {
       lead: { select: { id: true, legalName: true, designation: true } },
       members: { select: { id: true, legalName: true } },
       milestones: { orderBy: { dueDate: "asc" } },
+      service: { select: { name: true, icon: true } }
     },
   });
 };
@@ -47,8 +48,9 @@ export const getAllProjects = async (page = 1, limit = 9, filters = {}) => {
       include: {
         client: { select: { companyName: true } },
         lead: { select: { id: true, legalName: true } },
-        members: { select: { id: true, legalName: true } }, // For the avatar bubbles
+        members: { select: { id: true, legalName: true } }, 
         milestones: { select: { id: true, isCompleted: true, dueDate: true } },
+        service: { select: { name: true, icon: true } }
       },
     }),
   ]);

@@ -23,7 +23,8 @@ export const createProjectSchema = z.object({
         // Basic Details
         name: z.string().min(2, "Project name must be at least 2 characters"),
         description: z.string().optional(),
-        type: ProjectTypeEnum,
+        // type: ProjectTypeEnum,
+        serviceId: objectIdSchema,
         priority: ProjectPriorityEnum,
         engagementType: EngagementTypeEnum,
         clientId: objectIdSchema,

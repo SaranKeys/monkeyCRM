@@ -22,3 +22,17 @@ export const getActiveServices = async () => {
         orderBy: { createdAt: 'desc' } 
     });
 };
+
+
+export const updateServiceTemplate = async (id, data) => {
+    return await prisma.serviceTemplate.update({
+        where: { id },
+        data: data
+    });
+};
+
+export const deleteServiceTemplate = async (id) => {
+    return await prisma.serviceTemplate.delete({
+        where: { id }
+    });
+};
