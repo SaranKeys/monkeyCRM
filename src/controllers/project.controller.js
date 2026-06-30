@@ -90,3 +90,31 @@ export const deleteProject = async (req, res) => {
     });
   }
 };
+
+
+export const getProjectById = async (req, res) => {
+  try {
+    const project = await projectService.getProjectById(req.params.id);
+    
+    return res.status(200).json({
+      status: "success",
+      data: project,
+    });
+  } catch (error) {
+    console.error("[Get Project By ID Error]:", error);
+    
+    if (error.code === "P2025" || error.message.includes("malformed")) {
+      return res.status(404).json({
+        status: "fail",
+        message: "Project not found or invalid ID.",
+      });
+    }
+
+    return res.status(500).json({
+      status: "fail",
+      message: error.message || "Internal Server Error",
+    });
+  }
+};
+
+// add route and in app.jk

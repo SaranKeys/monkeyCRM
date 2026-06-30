@@ -126,3 +126,54 @@ export const deleteProject = async (projectId) => {
     where: { id: projectId },
   });
 };
+
+
+export const getProjectById = async (projectId) => {
+  const project = await prisma.project.findUnique({
+    where: { id: projectId },
+    include: {
+      client: { select: { id: true, companyName: true, contactName: true, contactEmail: true } },
+      
+      service: { select: { id: true, name: true, icon: true, page2Fields: true } },
+      
+      lead: { select: { id: true, legalName: true, designation: true } },
+      members: { select: { id: true, legalName: true, designation: true } },
+      
+      milestones: { orderBy: { dueDate: "asc" } },
+    },
+  });
+
+  if (!project) {
+    const err = new Error("Project not found");
+    err.code = "P2025";
+    throw err;
+  }
+
+  const now = new Date();
+  const totalMilestones = project.milestones.length;
+  const completedMilestones = project.milestones.filter((m) => m.isCompleted).length;
+
+  const progressPercentage =
+    totalMilestones === 0
+      ? 0
+      : Math.round((completedMilestones / totalMilestones) * 100);
+
+  const latestMilestone = project.milestones.reduce((latest, current) => {
+    return !latest || new Date(current.dueDate) > new Date(latest.dueDate)
+      ? current
+      : latest;
+  }, null);
+
+  const hasOverdueMilestones = project.milestones.some(
+    (m) => !m.isCompleted && new Date(m.dueDate) < now
+  );
+  
+  const calculatedHealth = hasOverdueMilestones ? "AT_RISK" : "ON_TRACK";
+
+  return {
+    ...project,
+    progressPercentage,
+    dueDate: latestMilestone ? latestMilestone.dueDate : null,
+    health: calculatedHealth,
+  };
+};
