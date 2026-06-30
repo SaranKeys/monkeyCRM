@@ -45,18 +45,20 @@ enum EngagementType {
   RETAINER_BUILD
 }
 
-enum ProjectType {
-  WEBSITE
-  WEB_APP
-  CRM
-  E_COMMERCE
-  MOBILE_APP
-  DIGITAL_MARKETING
-  MAINTENANCE
-  AUTOMATION
-  AI_WORKFLOW
-  AI_AGENT
-}
+// enum ProjectType {
+//   WEBSITE
+//   WEB_APP
+//   CRM
+//   E_COMMERCE
+//   MOBILE_APP
+//   DIGITAL_MARKETING
+//   MAINTENANCE
+//   AUTOMATION
+//   AI_WORKFLOW
+//   AI_AGENT
+// }
+
+
 
 enum ProjectPriority {
   LOW
@@ -242,13 +244,35 @@ model CompanyRole {
   @@map("company_roles")
 }
 
+
+model ServiceTemplate {
+  id          String   @id @default(auto()) @map("_id") @db.ObjectId
+  name        String   @unique 
+  icon        String   
+  
+  page2Fields Json     
+
+  isActive    Boolean  @default(true)
+
+  projects    Project[]
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@map("service_templates")
+}
+
+
 //  project flow 
 model Project {
   id             String          @id @default(auto()) @map("_id") @db.ObjectId
   // basic Details
   name           String
   description    String?
-  type           ProjectType
+
+  serviceId String          @db.ObjectId
+  service   ServiceTemplate @relation(fields: [serviceId], references: [id])
+  
   priority       ProjectPriority
   engagementType EngagementType
   status         ProjectStatus   @default(ACTIVE)
