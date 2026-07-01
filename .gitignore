@@ -4,4 +4,7 @@ node_modules
 
 google-credentials.json
 
+
 /src/generated/prisma
+
+seedAdmin.js
