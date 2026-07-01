@@ -20,4 +20,6 @@ router.get(
 
 router.delete('/:id', authenticate, restrictTo('ADMIN'), projectController.deleteProject);
 
+router.get("/:id", authenticate, restrictTo("ADMIN"), projectController.getProjectById); 
+
 export default router;

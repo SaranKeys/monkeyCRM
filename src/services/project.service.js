@@ -3,6 +3,21 @@ import prisma from "../config/prisma.js";
 export const createProject = async (projectData) => {
   const { milestones, ...coreData } = projectData;
 
+  const existingProject = await prisma.project.findFirst({
+    where: {
+      name: { equals: coreData.name, mode: "insensitive" },
+      clientId: coreData.clientId,
+    },
+  });
+
+  if (existingProject) {
+    const err = new Error(
+      `Duplicate Alert: A project named '${coreData.name}' already exists for this client.`,
+    );
+    err.isDuplicate = true;
+    throw err;
+  }
+
   return await prisma.project.create({
     data: {
       ...coreData,
@@ -15,7 +30,7 @@ export const createProject = async (projectData) => {
       lead: { select: { id: true, legalName: true, designation: true } },
       members: { select: { id: true, legalName: true } },
       milestones: { orderBy: { dueDate: "asc" } },
-      service: { select: { name: true, icon: true } }
+      service: { select: { name: true, icon: true } },
     },
   });
 };
@@ -48,9 +63,9 @@ export const getAllProjects = async (page = 1, limit = 9, filters = {}) => {
       include: {
         client: { select: { companyName: true } },
         lead: { select: { id: true, legalName: true } },
-        members: { select: { id: true, legalName: true } }, 
+        members: { select: { id: true, legalName: true } },
         milestones: { select: { id: true, isCompleted: true, dueDate: true } },
-        service: { select: { name: true, icon: true } }
+        service: { select: { name: true, icon: true } },
       },
     }),
   ]);
@@ -127,18 +142,26 @@ export const deleteProject = async (projectId) => {
   });
 };
 
-
 export const getProjectById = async (projectId) => {
   const project = await prisma.project.findUnique({
     where: { id: projectId },
     include: {
-      client: { select: { id: true, companyName: true, contactName: true, contactEmail: true } },
-      
-      service: { select: { id: true, name: true, icon: true, page2Fields: true } },
-      
+      client: {
+        select: {
+          id: true,
+          companyName: true,
+          contactName: true,
+          contactEmail: true,
+        },
+      },
+
+      service: {
+        select: { id: true, name: true, icon: true, page2Fields: true },
+      },
+
       lead: { select: { id: true, legalName: true, designation: true } },
       members: { select: { id: true, legalName: true, designation: true } },
-      
+
       milestones: { orderBy: { dueDate: "asc" } },
     },
   });
@@ -151,7 +174,9 @@ export const getProjectById = async (projectId) => {
 
   const now = new Date();
   const totalMilestones = project.milestones.length;
-  const completedMilestones = project.milestones.filter((m) => m.isCompleted).length;
+  const completedMilestones = project.milestones.filter(
+    (m) => m.isCompleted,
+  ).length;
 
   const progressPercentage =
     totalMilestones === 0
@@ -165,9 +190,9 @@ export const getProjectById = async (projectId) => {
   }, null);
 
   const hasOverdueMilestones = project.milestones.some(
-    (m) => !m.isCompleted && new Date(m.dueDate) < now
+    (m) => !m.isCompleted && new Date(m.dueDate) < now,
   );
-  
+
   const calculatedHealth = hasOverdueMilestones ? "AT_RISK" : "ON_TRACK";
 
   return {

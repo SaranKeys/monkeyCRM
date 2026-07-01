@@ -25,6 +25,13 @@ export const createProject = async (req, res) => {
   } catch (error) {
     console.error("[Project Creation Error]:", error);
 
+    if (error.isDuplicate) {
+      return res.status(409).json({
+        status: "fail",
+        message: error.message,
+      });
+    }
+
     if (error.code === "P2025" || error.message.includes("malformed")) {
       return res.status(400).json({
         status: "fail",
@@ -60,12 +67,10 @@ export const getAllProjects = async (req, res) => {
     });
   } catch (error) {
     console.error("[Get Projects Error]:", error);
-    return res
-      .status(500)
-      .json({
-        status: "fail",
-        message: error.message || "Internal Server Error",
-      });
+    return res.status(500).json({
+      status: "fail",
+      message: error.message || "Internal Server Error",
+    });
   }
 };
 
@@ -91,18 +96,17 @@ export const deleteProject = async (req, res) => {
   }
 };
 
-
 export const getProjectById = async (req, res) => {
   try {
     const project = await projectService.getProjectById(req.params.id);
-    
+
     return res.status(200).json({
       status: "success",
       data: project,
     });
   } catch (error) {
     console.error("[Get Project By ID Error]:", error);
-    
+
     if (error.code === "P2025" || error.message.includes("malformed")) {
       return res.status(404).json({
         status: "fail",
@@ -116,5 +120,3 @@ export const getProjectById = async (req, res) => {
     });
   }
 };
-
-// add route and in app.jk
