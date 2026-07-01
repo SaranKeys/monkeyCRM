@@ -87,9 +87,12 @@ enum TicketStatus {
   CLOSED
 }
 
-
-
-
+enum MilestoneStatus {
+  UPCOMING
+  IN_PROGRESS
+  DONE
+  CANCELLED
+}
 
 // Embedded Documents
 type AdditionalContact {
@@ -103,7 +106,7 @@ type AdditionalContact {
 model User {
   id        String   @id @default(auto()) @map("_id") @db.ObjectId
   email     String   @unique
-  password  String 
+  password  String
   role      Role     @default(EMPLOYEE)
   isActive  Boolean  @default(true)
   createdAt DateTime @default(now())
@@ -112,7 +115,7 @@ model User {
   employeeProfile EmployeeProfile?
   clientProfile   ClientProfile?
 
-  createdTickets Ticket[] @relation("TicketCreator")
+  createdTickets Ticket[]        @relation("TicketCreator")
   ticketComments TicketComment[] @relation("CommentAuthor")
 
   @@map("users")
@@ -177,8 +180,11 @@ model EmployeeProfile {
 
   assignedTickets Ticket[] @relation("TicketAssignee")
 
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  ownedMilestones ProjectMilestone[] @relation("MilestoneOwner")
+
+  createdAt         DateTime           @default(now())
+  updatedAt         DateTime           @updatedAt
+  // projectMilestones ProjectMilestone[]
 
   @@map("employee_profiles")
 }
@@ -259,35 +265,33 @@ model CompanyRole {
   @@map("company_roles")
 }
 
-
 model ServiceTemplate {
-  id          String   @id @default(auto()) @map("_id") @db.ObjectId
-  name        String   @unique 
-  icon        String   
-  
-  page2Fields Json     
+  id   String @id @default(auto()) @map("_id") @db.ObjectId
+  name String @unique
+  icon String
 
-  isActive    Boolean  @default(true)
+  page2Fields Json
 
-  projects    Project[]
+  isActive Boolean @default(true)
 
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  projects Project[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@map("service_templates")
 }
 
-
 //  project flow 
 model Project {
-  id             String          @id @default(auto()) @map("_id") @db.ObjectId
+  id          String  @id @default(auto()) @map("_id") @db.ObjectId
   // basic Details
-  name           String
-  description    String?
+  name        String
+  description String?
 
   serviceId String          @db.ObjectId
   service   ServiceTemplate @relation(fields: [serviceId], references: [id])
-  
+
   priority       ProjectPriority
   engagementType EngagementType
   status         ProjectStatus   @default(ACTIVE)
@@ -330,7 +334,18 @@ model ProjectMilestone {
   description String?
   type        MilestoneType
   dueDate     DateTime
-  isCompleted Boolean       @default(false)
+
+  status MilestoneStatus @default(UPCOMING)
+
+  ownerId String?          @db.ObjectId
+  
+  owner   EmployeeProfile? @relation("MilestoneOwner", fields: [ownerId], references: [id])
+
+  agenda      String?
+  decisions   String?
+  actionItems String?
+
+  isCompleted Boolean @default(false)
 
   projectId String  @db.ObjectId
   project   Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
@@ -341,48 +356,45 @@ model ProjectMilestone {
   @@map("project_milestones")
 }
 
-
 model Ticket {
-  id           String          @id @default(auto()) @map("_id") @db.ObjectId
-  
-  ticketNumber String          @unique 
-  
-  subject      String
-  details      String
-  priority     ProjectPriority 
-  status       TicketStatus    @default(OPEN)
+  id String @id @default(auto()) @map("_id") @db.ObjectId
 
-  projectId    String          @db.ObjectId
-  project      Project         @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  ticketNumber String @unique
 
-  creatorId    String          @db.ObjectId
-  creator      User            @relation("TicketCreator", fields: [creatorId], references: [id])
+  subject  String
+  details  String
+  priority ProjectPriority
+  status   TicketStatus    @default(OPEN)
 
-  assigneeId   String?         @db.ObjectId
-  assignee     EmployeeProfile? @relation("TicketAssignee", fields: [assigneeId], references: [id])
+  projectId String  @db.ObjectId
+  project   Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
 
-comments TicketComment[]
+  creatorId String @db.ObjectId
+  creator   User   @relation("TicketCreator", fields: [creatorId], references: [id])
 
-  createdAt    DateTime        @default(now())
-  updatedAt    DateTime        @updatedAt
+  assigneeId String?          @db.ObjectId
+  assignee   EmployeeProfile? @relation("TicketAssignee", fields: [assigneeId], references: [id])
+
+  comments TicketComment[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@map("tickets")
 }
 
-
 model TicketComment {
-  id        String   @id @default(auto()) @map("_id") @db.ObjectId
-  text      String
-  
-  ticketId  String   @db.ObjectId
-  ticket    Ticket   @relation(fields: [ticketId], references: [id], onDelete: Cascade)
-  
-  authorId  String   @db.ObjectId
-  author    User     @relation("CommentAuthor", fields: [authorId], references: [id])
+  id   String @id @default(auto()) @map("_id") @db.ObjectId
+  text String
+
+  ticketId String @db.ObjectId
+  ticket   Ticket @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+
+  authorId String @db.ObjectId
+  author   User   @relation("CommentAuthor", fields: [authorId], references: [id])
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
   @@map("ticket_comments")
 }
-

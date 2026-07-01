@@ -10,6 +10,7 @@ import roleRoutes from "./routes/role.route.js"
 import projectRoutes from "./routes/project.route.js"
 import serviceRoutes from "./routes/templateService.routes.js"
 import ticketRoutes from "./routes/ticket.route.js"
+import runwayRoutes from "./routes/runway.route.js"
 
 const app = express();
 
@@ -35,7 +36,7 @@ app.use('/api/roles', roleRoutes)
 app.use('/api/projects', projectRoutes)
 app.use('/api/services', serviceRoutes)
 app.use('/api/tickets', ticketRoutes);
-
+app.use('/api/runway', runwayRoutes);
 
 app.use(notFoundHandler);
 app.use(globalErrorHandler);
