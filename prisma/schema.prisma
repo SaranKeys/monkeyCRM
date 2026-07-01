@@ -88,6 +88,9 @@ enum TicketStatus {
 }
 
 
+
+
+
 // Embedded Documents
 type AdditionalContact {
   name  String
@@ -382,3 +385,4 @@ model TicketComment {
 
   @@map("ticket_comments")
 }
+
