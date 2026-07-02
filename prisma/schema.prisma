@@ -102,6 +102,20 @@ enum ApprovalStatus {
   REWORK_REQUESTED
 }
 
+enum PhaseStatus {
+  UPCOMING
+  IN_PROGRESS
+  COMPLETED
+}
+
+enum TaskStatus {
+  TO_DO
+  IN_PROGRESS
+  BLOCKED
+  DONE
+}
+
+
 type Attachment {
   name String
   url  String
@@ -205,6 +219,9 @@ model EmployeeProfile {
   createdAt         DateTime           @default(now())
   updatedAt         DateTime           @updatedAt
   // projectMilestones ProjectMilestone[]
+
+  ledPhases     ProjectPhase[] @relation("PhaseLead")
+  assignedTasks PhaseTask[]    @relation("TaskAssignee")
   
 
   @@map("employee_profiles")
@@ -345,6 +362,8 @@ model Project {
 
   updates ProjectUpdate[]
 
+  phases ProjectPhase[]
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
@@ -464,4 +483,73 @@ model UpdateReply {
   updatedAt DateTime @updatedAt
 
   @@map("update_replies")
+}
+
+
+model ProjectPhase {
+  id             String          @id @default(auto()) @map("_id") @db.ObjectId
+  name           String
+  description    String?
+  startDate      DateTime
+  dueDate        DateTime
+  priority       ProjectPriority @default(MEDIUM)
+  status         PhaseStatus     @default(UPCOMING)
+  
+  estimatedHours Int             @default(0)
+  loggedHours    Int             @default(0)
+
+  deliverables   Attachment[]
+
+  projectId      String          @db.ObjectId
+  project        Project         @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  leadId         String?         @db.ObjectId
+  lead           EmployeeProfile? @relation("PhaseLead", fields: [leadId], references: [id])
+
+  subPhases      PhaseSubPhase[]
+  tasks          PhaseTask[]
+
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
+
+  @@map("project_phases")
+}
+
+model PhaseSubPhase {
+  id        String       @id @default(auto()) @map("_id") @db.ObjectId
+  name      String
+
+  phaseId   String       @db.ObjectId
+  phase     ProjectPhase @relation(fields: [phaseId], references: [id], onDelete: Cascade)
+
+  tasks     PhaseTask[]
+
+  createdAt DateTime     @default(now())
+  updatedAt DateTime     @updatedAt
+
+  @@map("phase_sub_phases")
+}
+
+model PhaseTask {
+  id          String          @id @default(auto()) @map("_id") @db.ObjectId
+  title       String
+  startDate   DateTime?
+  dueDate     DateTime?
+
+  priority    ProjectPriority @default(MEDIUM)
+  status      TaskStatus      @default(TO_DO)
+
+  phaseId     String          @db.ObjectId
+  phase       ProjectPhase    @relation(fields: [phaseId], references: [id], onDelete: Cascade)
+
+  subPhaseId  String?         @db.ObjectId
+  subPhase    PhaseSubPhase?  @relation(fields: [subPhaseId], references: [id], onDelete: SetNull)
+
+  assigneeId  String?         @db.ObjectId
+  assignee    EmployeeProfile? @relation("TaskAssignee", fields: [assigneeId], references: [id])
+
+  createdAt   DateTime        @default(now())
+  updatedAt   DateTime        @updatedAt
+
+  @@map("phase_tasks")
 }
