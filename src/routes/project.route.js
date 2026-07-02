@@ -18,8 +18,30 @@ router.get(
   projectController.getAllProjects,
 );
 
-router.delete('/:id', authenticate, restrictTo('ADMIN'), projectController.deleteProject);
+router.delete(
+  "/:id",
+  authenticate,
+  restrictTo("ADMIN"),
+  projectController.deleteProject,
+);
+router.get(
+  "/:id",
+  authenticate,
+  restrictTo("ADMIN"),
+  projectController.getProjectById,
+);
 
-router.get("/:id", authenticate, restrictTo("ADMIN"), projectController.getProjectById); 
+router.patch(
+  "/:id",
+  authenticate,
+  restrictTo("ADMIN"),
+  projectController.updateProject,
+);
+
+router.get(
+  "/:projectId/team",
+  authenticate,
+  projectController.fetchProjectTeam,
+);
 
 export default router;

@@ -202,3 +202,40 @@ export const getProjectById = async (projectId) => {
     health: calculatedHealth,
   };
 };
+
+export const getProjectTeam = async (projectId) => {
+  const project = await prisma.project.findUnique({
+    where: { id: projectId },
+    select: {
+      lead: {
+        select: {
+          id: true,
+          legalName: true,
+          profilePhotoUrl: true,
+          designation: true,
+        },
+      },
+      members: {
+        select: {
+          id: true,
+          legalName: true,
+          profilePhotoUrl: true,
+          designation: true,
+        },
+      },
+    },
+  });
+
+  return project;
+};
+
+export const updateProject = async (projectId, updateData) => {
+  return await prisma.project.update({
+    where: { id: projectId },
+    data: updateData,
+    include: {
+      client: { select: { companyName: true, contactName: true } },
+      lead: { select: { legalName: true, profilePhotoUrl: true } },
+    },
+  });
+};

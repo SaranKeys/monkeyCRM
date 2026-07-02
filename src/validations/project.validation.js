@@ -49,3 +49,28 @@ export const createProjectSchema = z.object({
         milestones: z.array(milestoneSchema).default([])
     })
 });
+
+
+export const updateProjectSchema = z.object({
+  body: z.object({
+    name: z.string().min(1, "Project name cannot be empty").optional(),
+    description: z.string().optional().nullable(),
+    
+    serviceId: objectIdSchema.optional(),
+    clientId: objectIdSchema.optional(),
+    
+    priority: z.enum(["LOW", "MEDIUM", "HIGH", "URGENT"]).optional(),
+    status: z.enum(["DRAFT", "ACTIVE", "ON_HOLD", "COMPLETED", "CANCELLED"]).optional(),
+    engagementType: z.enum(["PROJECT", "RETAINER", "RETAINER_BUILD"]).optional(),
+    
+    clientRequirements: z.any().optional(), 
+    requiredResources: z.any().optional(),  
+        
+    estimatedHours: z.number().int().positive().optional(),
+    techStack: z.array(z.string()).optional(),
+    customInstructions: z.string().optional().nullable(),
+    
+    leadId: objectIdSchema.optional().nullable(),
+    memberIds: z.array(objectIdSchema).optional(),
+  })
+});

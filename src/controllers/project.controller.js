@@ -1,5 +1,5 @@
 import * as projectService from "../services/project.service.js";
-import { createProjectSchema } from "../validations/project.validation.js";
+import { createProjectSchema, updateProjectSchema } from "../validations/project.validation.js";
 
 export const createProject = async (req, res) => {
   try {
@@ -106,6 +106,59 @@ export const getProjectById = async (req, res) => {
     });
   } catch (error) {
     console.error("[Get Project By ID Error]:", error);
+
+    if (error.code === "P2025" || error.message.includes("malformed")) {
+      return res.status(404).json({
+        status: "fail",
+        message: "Project not found or invalid ID.",
+      });
+    }
+
+    return res.status(500).json({
+      status: "fail",
+      message: error.message || "Internal Server Error",
+    });
+  }
+};
+
+export const fetchProjectTeam = async (req, res) => {
+    try {
+        const { projectId } = req.params;
+        
+        const team = await projectService.getProjectTeam(projectId);
+        
+        if (!team) {
+            return res.status(404).json({ status: "fail", message: "Project not found" });
+        }
+        
+        return res.status(200).json({ status: "success", data: team });
+    } catch (error) {
+        console.error("[Get Team Error]:", error);
+        return res.status(500).json({ status: "fail", message: error.message });
+    }
+};
+
+export const updateProject = async (req, res) => {
+  try {
+    const validationResult = updateProjectSchema.safeParse(req);
+
+    if (!validationResult.success) {
+      const structuralErrors = validationResult.error.issues.map((e) => ({
+        field: e.path.join("."),
+        message: e.message,
+      }));
+      return res.status(400).json({ status: "fail", errors: structuralErrors });
+    }
+
+    const updatedProject = await projectService.updateProject(req.params.id, validationResult.data.body);
+
+    return res.status(200).json({
+      status: "success",
+      message: `Project '${updatedProject.name}' updated successfully.`,
+      data: updatedProject,
+    });
+  } catch (error) {
+    console.error("[Project Update Error]:", error);
 
     if (error.code === "P2025" || error.message.includes("malformed")) {
       return res.status(404).json({
