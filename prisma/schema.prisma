@@ -222,6 +222,8 @@ model EmployeeProfile {
 
   ledPhases     ProjectPhase[] @relation("PhaseLead")
   assignedTasks PhaseTask[]    @relation("TaskAssignee")
+
+  sentMessages ChatMessage[] @relation("ChatSender")
   
 
   @@map("employee_profiles")
@@ -364,6 +366,8 @@ model Project {
 
   phases ProjectPhase[]
 
+  chatMessages ChatMessage[]
+  
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
@@ -552,4 +556,20 @@ model PhaseTask {
   updatedAt   DateTime        @updatedAt
 
   @@map("phase_tasks")
+}
+
+model ChatMessage {
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  text      String
+
+  projectId String   @db.ObjectId
+  project   Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  senderId  String          @db.ObjectId
+  sender    EmployeeProfile @relation("ChatSender", fields: [senderId], references: [id])
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("chat_messages")
 }

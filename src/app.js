@@ -13,6 +13,7 @@ import ticketRoutes from "./routes/ticket.route.js"
 import runwayRoutes from "./routes/runway.route.js"
 import updateRoutes from "./routes/update.route.js"
 import phaseRoutes from "./routes/phase.route.js"
+import chatRoutes from "./routes/chat.route.js"
 
 const app = express();
 
@@ -41,6 +42,7 @@ app.use('/api/tickets', ticketRoutes);
 app.use('/api/runway', runwayRoutes);
 app.use('/api/updates', updateRoutes);
 app.use('/api/phases', phaseRoutes);
+app.use('/api/chat', chatRoutes);
 
 app.use(notFoundHandler);
 app.use(globalErrorHandler);
