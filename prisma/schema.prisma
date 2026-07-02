@@ -94,6 +94,21 @@ enum MilestoneStatus {
   CANCELLED
 }
 
+enum ApprovalStatus {
+  NONE
+  PENDING
+  APPROVED
+  REJECTED
+  REWORK_REQUESTED
+}
+
+type Attachment {
+  name String
+  url  String
+  type String // 'video', 'document', 'image'
+}
+
+
 // Embedded Documents
 type AdditionalContact {
   name  String
@@ -117,6 +132,9 @@ model User {
 
   createdTickets Ticket[]        @relation("TicketCreator")
   ticketComments TicketComment[] @relation("CommentAuthor")
+
+  projectUpdates ProjectUpdate[] @relation("UpdateAuthor")
+  updateReplies  UpdateReply[]   @relation("UpdateReplyAuthor")
 
   @@map("users")
 }
@@ -182,9 +200,12 @@ model EmployeeProfile {
 
   ownedMilestones ProjectMilestone[] @relation("MilestoneOwner")
 
+  updatesToApprove ProjectUpdate[] @relation("UpdateApprover")
+
   createdAt         DateTime           @default(now())
   updatedAt         DateTime           @updatedAt
   // projectMilestones ProjectMilestone[]
+  
 
   @@map("employee_profiles")
 }
@@ -322,6 +343,8 @@ model Project {
 
   tickets Ticket[]
 
+  updates ProjectUpdate[]
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
@@ -397,4 +420,48 @@ model TicketComment {
   updatedAt DateTime @updatedAt
 
   @@map("ticket_comments")
+}
+
+
+model ProjectUpdate {
+  id      String @id @default(auto()) @map("_id") @db.ObjectId
+  content String
+
+  attachments Attachment[]
+
+  clientView     Boolean        @default(true)
+  approvalStatus ApprovalStatus @default(NONE)
+
+  projectId String  @db.ObjectId
+  project   Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  authorId String @db.ObjectId
+  author   User   @relation("UpdateAuthor", fields: [authorId], references: [id])
+
+  replies UpdateReply[]
+
+  assignedApproverId String?          @db.ObjectId
+  assignedApprover   EmployeeProfile? @relation("UpdateApprover", fields: [assignedApproverId], references: [id])
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("project_updates")
+}
+
+
+model UpdateReply {
+  id   String @id @default(auto()) @map("_id") @db.ObjectId
+  text String
+
+  updateId String        @db.ObjectId
+  update   ProjectUpdate @relation(fields: [updateId], references: [id], onDelete: Cascade)
+
+  authorId String @db.ObjectId
+  author   User   @relation("UpdateReplyAuthor", fields: [authorId], references: [id])
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("update_replies")
 }
