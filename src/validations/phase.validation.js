@@ -17,13 +17,24 @@ export const createPhaseSchema = z.object({
 });
 
 export const updatePhaseSchema = z.object({
-    body: z.object({
-        priority: PriorityEnum.optional(),
-        startDate: z.coerce.date().optional(),
-        dueDate: z.coerce.date().optional(),
-        estimatedHours: z.number().optional(),
-    })
+  body: z.object({
+    name: z.string().min(1, "Name cannot be empty").optional(),
+    description: z.string().optional().nullable(),
+    
+    startDate: z.string().datetime().optional(), 
+    dueDate: z.string().datetime().optional(),
+    
+    priority: z.enum(["LOW", "MEDIUM", "HIGH", "URGENT"]).optional(),
+    
+    status: z.enum(["UPCOMING", "IN_PROGRESS", "COMPLETED"]).optional(),
+    
+    estimatedHours: z.number().int().nonnegative().optional(),
+    loggedHours: z.number().int().nonnegative().optional(),
+    
+    leadId: z.string().length(24).optional().nullable(),
+  })
 });
+
 
 export const createSubPhaseSchema = z.object({
     body: z.object({
