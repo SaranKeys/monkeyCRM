@@ -5,6 +5,7 @@ import {
   createSubPhaseSchema,
   createTaskSchema,
   updateTaskSchema,
+  updateSubPhaseSchema,
 } from "../validations/phase.validation.js";
 
 export const addPhase = async (req, res) => {
