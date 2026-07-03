@@ -55,3 +55,9 @@ export const updateTaskSchema = z.object({
         assigneeId: objectIdSchema.optional().nullable()
     })
 });
+
+export const updateSubPhaseSchema = z.object({
+  body: z.object({
+    name: z.string().min(1, "Sub-phase name cannot be empty").optional()
+  })
+});

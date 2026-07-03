@@ -27,7 +27,7 @@ app.use(morgan('dev'));
 app.get('/health', (req, res) => {
     res.status(200).json({ 
         status: 'success', 
-        message: 'monkeyCRM server is healthy 25th june !',
+        message: 'monkeyCRM server is healthy 3rd july!',
         timestamp: new Date().toISOString()
     });
 });

@@ -30,6 +30,7 @@ export const getProjectPhases = async (projectId) => {
         };
     });
 };
+
 export const getPhaseDetails = async (phaseId) => {
     const phase = await prisma.projectPhase.findUnique({
         where: { id: phaseId },
@@ -89,5 +90,30 @@ export const updateTask = async (taskId, data) => {
         where: { id: taskId },
         data, 
         include: { assignee: { select: { id: true, legalName: true } } }
+    });
+};
+
+export const deletePhase = async (phaseId) => {
+    return await prisma.projectPhase.delete({
+        where: { id: phaseId }
+    });
+};
+
+export const updateSubPhase = async (subPhaseId, data) => {
+    return await prisma.phaseSubPhase.update({
+        where: { id: subPhaseId },
+        data
+    });
+};
+
+export const deleteSubPhase = async (subPhaseId) => {
+    return await prisma.phaseSubPhase.delete({
+        where: { id: subPhaseId }
+    });
+};
+
+export const deleteTask = async (taskId) => {
+    return await prisma.phaseTask.delete({
+        where: { id: taskId }
     });
 };
