@@ -46,9 +46,23 @@ export const uploadFileToDrive = async (fileBuffer, fileName, mimeType, prefix =
             },
         });
 
-        return response.data.webViewLink;
+        return {
+            url : response.data.webViewLink,
+            driveFileId: response.data.id
+        }
     } catch (error) {
         console.error('[Google Drive Upload Error]:', error);
         throw new Error('Failed to upload document to storage server');
     }
 };
+
+export const deleteFileFromDrive = async (driveFileId) => {
+    try {
+        await drive.files.delete({ fileId: driveFileId });
+        return true;
+    } catch (error) {
+        console.error('[Google Drive Delete Error]:', error);
+        throw new Error('Failed to delete file from Google Drive');
+    }
+};
+

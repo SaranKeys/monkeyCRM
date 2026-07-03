@@ -150,6 +150,8 @@ model User {
   projectUpdates ProjectUpdate[] @relation("UpdateAuthor")
   updateReplies  UpdateReply[]   @relation("UpdateReplyAuthor")
 
+  uploadedFiles ProjectFile[] @relation("FileUploader")
+
   @@map("users")
 }
 
@@ -367,6 +369,8 @@ model Project {
   phases ProjectPhase[]
 
   chatMessages ChatMessage[]
+
+  projectFiles ProjectFile[]
   
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -572,4 +576,23 @@ model ChatMessage {
   updatedAt DateTime @updatedAt
 
   @@map("chat_messages")
+}
+
+model ProjectFile {
+  id          String   @id @default(auto()) @map("_id") @db.ObjectId
+  name        String    
+  url         String 
+  driveFileId String    
+  type        String    
+  
+  projectId   String   @db.ObjectId
+  project     Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  uploaderId  String   @db.ObjectId
+  uploader    User     @relation("FileUploader", fields: [uploaderId], references: [id])
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@map("project_files")
 }
