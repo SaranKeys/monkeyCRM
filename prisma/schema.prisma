@@ -45,18 +45,6 @@ enum EngagementType {
   RETAINER_BUILD
 }
 
-// enum ProjectType {
-//   WEBSITE
-//   WEB_APP
-//   CRM
-//   E_COMMERCE
-//   MOBILE_APP
-//   DIGITAL_MARKETING
-//   MAINTENANCE
-//   AUTOMATION
-//   AI_WORKFLOW
-//   AI_AGENT
-// }
 
 enum ProjectPriority {
   LOW
@@ -115,6 +103,11 @@ enum TaskStatus {
   DONE
 }
 
+enum TaskUpdateType {
+  UPDATE
+  QUESTION
+}
+
 
 type Attachment {
   name String
@@ -149,6 +142,11 @@ model User {
 
   projectUpdates ProjectUpdate[] @relation("UpdateAuthor")
   updateReplies  UpdateReply[]   @relation("UpdateReplyAuthor")
+
+  taskUpdates       TaskUpdate[]      @relation("TaskUpdateAuthor")
+  taskUpdateReplies TaskUpdateReply[] @relation("TaskUpdateReplyAuthor")
+
+  timeLogs TaskTimeLog[] @relation("TimeLogAuthor")
 
   uploadedFiles ProjectFile[] @relation("FileUploader")
 
@@ -547,6 +545,9 @@ model PhaseTask {
   priority    ProjectPriority @default(MEDIUM)
   status      TaskStatus      @default(TO_DO)
 
+  estimatedHours Int          @default(0) 
+  loggedHours    Int          @default(0)
+
   phaseId     String          @db.ObjectId
   phase       ProjectPhase    @relation(fields: [phaseId], references: [id], onDelete: Cascade)
 
@@ -555,6 +556,10 @@ model PhaseTask {
 
   assigneeId  String?         @db.ObjectId
   assignee    EmployeeProfile? @relation("TaskAssignee", fields: [assigneeId], references: [id])
+
+  updates     TaskUpdate[]
+
+  timeLogs TaskTimeLog[]
 
   createdAt   DateTime        @default(now())
   updatedAt   DateTime        @updatedAt
@@ -595,4 +600,59 @@ model ProjectFile {
   updatedAt   DateTime @updatedAt
 
   @@map("project_files")
+}
+
+
+model TaskUpdate {
+  id        String         @id @default(auto()) @map("_id") @db.ObjectId
+  content   String
+  type      TaskUpdateType @default(UPDATE) // UPDATE or QUESTION
+
+  taskId    String         @db.ObjectId
+  task      PhaseTask      @relation(fields: [taskId], references: [id], onDelete: Cascade)
+
+  authorId  String         @db.ObjectId
+  author    User           @relation("TaskUpdateAuthor", fields: [authorId], references: [id])
+
+  replies   TaskUpdateReply[]
+
+  createdAt DateTime       @default(now())
+  updatedAt DateTime       @updatedAt
+
+  @@map("task_updates")
+}
+
+model TaskUpdateReply {
+  id        String         @id @default(auto()) @map("_id") @db.ObjectId
+  text      String
+
+  updateId  String         @db.ObjectId
+  update    TaskUpdate     @relation(fields: [updateId], references: [id], onDelete: Cascade)
+
+  authorId  String         @db.ObjectId
+  author    User           @relation("TaskUpdateReplyAuthor", fields: [authorId], references: [id])
+
+  createdAt DateTime       @default(now())
+  updatedAt DateTime       @updatedAt
+
+  @@map("task_update_replies")
+}
+
+
+model TaskTimeLog {
+  id        String    @id @default(auto()) @map("_id") @db.ObjectId
+  hours     Int        
+  date      DateTime
+  note      String?
+
+  taskId    String    @db.ObjectId
+  task      PhaseTask @relation(fields: [taskId], references: [id], onDelete: Cascade)
+
+  authorId  String    @db.ObjectId
+  author    User      @relation("TimeLogAuthor", fields: [authorId], references: [id])
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+
+  @@map("task_time_logs")
 }

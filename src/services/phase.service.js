@@ -117,3 +117,80 @@ export const deleteTask = async (taskId) => {
         where: { id: taskId }
     });
 };
+
+
+export const createTaskUpdate = async (taskId, authorId, data) => {
+    return await prisma.taskUpdate.create({
+        data: {
+            content: data.content,
+            type: data.type,
+            taskId,
+            authorId
+        },
+        include: {
+            author: { select: { employeeProfile: { select: { legalName: true, profilePhotoUrl: true } } } }
+        }
+    });
+};
+
+export const getTaskUpdates = async (taskId) => {
+    return await prisma.taskUpdate.findMany({
+        where: { taskId },
+        orderBy: { createdAt: 'desc' },  
+        include: {
+            author: { select: { employeeProfile: { select: { legalName: true, profilePhotoUrl: true } } } },
+            replies: {
+                orderBy: { createdAt: 'asc' }, // Oldest replies first (chronological)
+                include: {
+                    author: { select: { employeeProfile: { select: { legalName: true, profilePhotoUrl: true } } } }
+                }
+            }
+        }
+    });
+};
+
+export const addTaskUpdateReply = async (updateId, authorId, text) => {
+    return await prisma.taskUpdateReply.create({
+        data: { text, updateId, authorId },
+        include: {
+            author: { select: { employeeProfile: { select: { legalName: true, profilePhotoUrl: true } } } }
+        }
+    });
+};
+
+export const addTaskTimeLog = async (taskId, authorId, data) => {
+    return await prisma.$transaction(async (tx) => {
+
+        const log = await tx.taskTimeLog.create({
+            data: {
+                hours: data.hours,
+                date: new Date(data.date),
+                note: data.note,
+                taskId,
+                authorId
+            },
+            include: {
+                author: { select: { employeeProfile: { select: { legalName: true } } } }
+            }
+        });
+
+        await tx.phaseTask.update({
+            where: { id: taskId },
+            data: {
+                loggedHours: { increment: data.hours }
+            }
+        });
+
+        return log;
+    });
+};
+
+export const getTaskTimeLogs = async (taskId) => {
+    return await prisma.taskTimeLog.findMany({
+        where: { taskId },
+        orderBy: { date: 'desc' },  
+        include: {
+            author: { select: { employeeProfile: { select: { legalName: true } } } }
+        }
+    });
+};

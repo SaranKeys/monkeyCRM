@@ -6,6 +6,9 @@ import {
   createTaskSchema,
   updateTaskSchema,
   updateSubPhaseSchema,
+  createTaskReplySchema,
+  createTaskUpdateSchema,
+  createTimeLogSchema,
 } from "../validations/phase.validation.js";
 
 export const addPhase = async (req, res) => {
@@ -184,4 +187,59 @@ export const removeTask = async (req, res) => {
         .json({ status: "fail", message: "Task not found" });
     return res.status(500).json({ status: "fail", message: error.message });
   }
+};
+
+
+export const postTaskUpdate = async (req, res) => {
+    try {
+        const validation = createTaskUpdateSchema.safeParse(req);
+        if (!validation.success) return res.status(400).json({ status: "fail", errors: validation.error.issues });
+
+        const update = await phaseService.createTaskUpdate(req.params.taskId, req.user.id, validation.data.body);
+        return res.status(201).json({ status: "success", data: update });
+    } catch (error) {
+        return res.status(500).json({ status: "fail", message: error.message });
+    }
+};
+
+export const fetchTaskUpdates = async (req, res) => {
+    try {
+        const updates = await phaseService.getTaskUpdates(req.params.taskId);
+        return res.status(200).json({ status: "success", data: updates });
+    } catch (error) {
+        return res.status(500).json({ status: "fail", message: error.message });
+    }
+};
+
+export const postTaskReply = async (req, res) => {
+    try {
+        const validation = createTaskReplySchema.safeParse(req);
+        if (!validation.success) return res.status(400).json({ status: "fail", errors: validation.error.issues });
+
+        const reply = await phaseService.addTaskUpdateReply(req.params.updateId, req.user.id, validation.data.body.text);
+        return res.status(201).json({ status: "success", data: reply });
+    } catch (error) {
+        return res.status(500).json({ status: "fail", message: error.message });
+    }
+};
+
+export const postTimeLog = async (req, res) => {
+    try {
+        const validation = createTimeLogSchema.safeParse(req);
+        if (!validation.success) return res.status(400).json({ status: "fail", errors: validation.error.issues });
+
+        const timeLog = await phaseService.addTaskTimeLog(req.params.taskId, req.user.id, validation.data.body);
+        return res.status(201).json({ status: "success", data: timeLog });
+    } catch (error) {
+        return res.status(500).json({ status: "fail", message: error.message });
+    }
+};
+
+export const fetchTimeLogs = async (req, res) => {
+    try {
+        const logs = await phaseService.getTaskTimeLogs(req.params.taskId);
+        return res.status(200).json({ status: "success", data: logs });
+    } catch (error) {
+        return res.status(500).json({ status: "fail", message: error.message });
+    }
 };

@@ -17,8 +17,17 @@ router.post('/sub-phase/create', phaseController.addSubPhase);
 router.patch('/sub-phase/:subPhaseId', phaseController.editSubPhase);  
 router.delete('/sub-phase/:subPhaseId', phaseController.removeSubPhase);  
 
+// tasks
 router.post('/task/create', phaseController.addTask);
 router.patch('/task/:taskId', phaseController.editTask);
 router.delete('/task/:taskId', phaseController.removeTask);  
+
+// dynamic task view
+router.post('/task/:taskId/updates', phaseController.postTaskUpdate);
+router.get('/task/:taskId/updates', phaseController.fetchTaskUpdates);
+router.post('/task/updates/:updateId/reply', phaseController.postTaskReply);
+
+router.post('/task/:taskId/time-logs', phaseController.postTimeLog);
+router.get('/task/:taskId/time-logs', phaseController.fetchTimeLogs);
 
 export default router;
