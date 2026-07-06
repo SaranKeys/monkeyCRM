@@ -243,3 +243,16 @@ export const fetchTimeLogs = async (req, res) => {
         return res.status(500).json({ status: "fail", message: error.message });
     }
 };
+
+
+export const getSingleTask = async (req, res) => {
+  try {
+    const task = await phaseService.getTaskDetails(req.params.taskId);
+    
+    if (!task) return res.status(404).json({ status: "fail", message: "Task not found" });
+    
+    return res.status(200).json({ status: "success", data: task });
+  } catch (error) {
+    return res.status(500).json({ status: "fail", message: error.message });
+  }
+};

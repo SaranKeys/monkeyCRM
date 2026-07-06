@@ -194,3 +194,26 @@ export const getTaskTimeLogs = async (taskId) => {
         }
     });
 };
+
+
+export const getTaskDetails = async (taskId) => {
+    return await prisma.phaseTask.findUnique({
+        where: { id: taskId },
+        include: {
+            assignee: {
+                select: {
+                    legalName: true,
+                    profilePhotoUrl: true
+                }
+            },
+            phase: {
+                select: {
+                    name: true,
+                    project: {
+                        select: { name: true }
+                    }
+                }
+            }
+        }
+    });
+};
