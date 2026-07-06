@@ -6,10 +6,8 @@ export const loginUser = async (email, password) => {
     const targetEmail = process.env.ADMIN_EMAIL || "admin@monkeycrm.com";
     const targetPassword = process.env.ADMIN_PASSWORD || "admin123@";
 
-  if (email === targetEmail && password === targetPassword) {
-        
+    if (email === targetEmail && password === targetPassword) {
         const adminDbUser = await prisma.user.findUnique({ where: { email } });
-
         const adminId = adminDbUser ? adminDbUser.id : "000000000000000000000000";
 
         const token = jwt.sign(
@@ -25,7 +23,10 @@ export const loginUser = async (email, password) => {
     }
 
     const dbUser = await prisma.user.findUnique({
-        where: { email }
+        where: { email },
+        include: {
+            employeeProfile: true 
+        }
     });
 
     if (!dbUser) {
@@ -60,7 +61,8 @@ export const loginUser = async (email, password) => {
         user: {
             id: dbUser.id,
             email: dbUser.email,
-            role: dbUser.role
+            role: dbUser.role,
+            employeeProfile: dbUser.employeeProfile 
         }
     };
 };
