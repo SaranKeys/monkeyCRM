@@ -1,22 +1,52 @@
-import { Router } from 'express';
-import * as ticketController from '../controllers/ticket.controller.js';
-import { authenticate } from '../middlewares/auth.middleware.js'; 
+import { Router } from "express";
+import * as ticketController from "../controllers/ticket.controller.js";
+import {
+  authenticate,
+  checkPermission,
+} from "../middlewares/auth.middleware.js";
 
 const router = Router();
 
 router.use(authenticate);
 
-router.post('/create', ticketController.createTicket);
-router.put('/:id', ticketController.updateTicket);
-router.delete('/:id', ticketController.deleteTicket);
+router.post(
+  "/create",
+  checkPermission("Tickets", "createTicket"),
+  ticketController.createTicket,
+);
+router.put(
+  "/:id",
+  checkPermission("Tickets", "changeStatus"),
+  ticketController.updateTicket,
+);
+router.delete(
+  "/:id",
+  checkPermission("Tickets", "createTicket"),
+  ticketController.deleteTicket,
+);
 
-router.get('/project/:projectId', ticketController.getProjectTickets);
+router.get(
+  "/project/:projectId",
+  checkPermission("Tickets", "viewTickets"),
+  ticketController.getProjectTickets,
+);
 
 // specific ticket
-router.get('/:id', ticketController.getSingleTicket);
+router.get(
+  "/:id",
+  checkPermission("Tickets", "viewTickets"),
+  ticketController.getSingleTicket,
+);
 
-router.post('/:id/comments', ticketController.addCommentToTicket);
-router.delete('/comments/:commentId', ticketController.deleteTicketComment);
- 
+router.post(
+  "/:id/comments",
+  checkPermission("Tickets", "reply"),
+  ticketController.addCommentToTicket,
+);
+router.delete(
+  "/comments/:commentId",
+  checkPermission("Tickets", "reply"),
+  ticketController.deleteTicketComment,
+);
 
-export default router; 
+export default router;

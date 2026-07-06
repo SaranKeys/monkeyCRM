@@ -7,7 +7,12 @@ export const loginUser = async (email, password) => {
     const targetPassword = process.env.ADMIN_PASSWORD || "admin123@";
 
     if (email === targetEmail && password === targetPassword) {
-        const adminDbUser = await prisma.user.findUnique({ where: { email } });
+        
+        const adminDbUser = await prisma.user.findUnique({ 
+            where: { email },
+            include: { employeeProfile: true } 
+        });
+        
         const adminId = adminDbUser ? adminDbUser.id : "000000000000000000000000";
 
         const token = jwt.sign(
@@ -18,7 +23,13 @@ export const loginUser = async (email, password) => {
         
         return { 
             token, 
-            user: { id: adminId, email, role: 'ADMIN', name: 'Super Admin' } 
+            user: { 
+                id: adminId, 
+                email, 
+                role: 'ADMIN', 
+                name: 'Super Admin',
+                employeeProfile: adminDbUser?.employeeProfile 
+            } 
         };
     }
 

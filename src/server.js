@@ -8,6 +8,7 @@ import { setupChatSocket } from './sockets/chat.socket.js';
 import app from './app.js';
 import prisma from './config/prisma.js';
 import { logger } from './utils/logger.js';
+import cors from "cors"
 
 const PORT = process.env.PORT || 8000;
 
@@ -27,7 +28,7 @@ async function startServer() {
 
         setupChatSocket(io);
 
-        const server = httpServer.listen(PORT, () => {
+       const server = httpServer.listen(PORT, "0.0.0.0", () => {
             logger.success(`🚀 monkeyCRM Server & WebSockets live on port ${PORT} in ${process.env.NODE_ENV} mode.`);
         });
 
