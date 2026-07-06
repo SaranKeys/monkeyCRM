@@ -102,8 +102,8 @@ export const registerEmployee = async (req, res) => {
     const keys = Object.keys(uploadTasks);
     const results = await Promise.all(Object.values(uploadTasks));
 
-    keys.forEach((key, index) => {
-      resolvedUrls[key] = results[index];
+  keys.forEach((key, index) => {
+      resolvedUrls[key] = results[index] ? results[index].url : null;
     });
 
     const record = await employeeService.createEmployee(
@@ -242,16 +242,16 @@ export const updateEmployeeDocuments = async (req, res) => {
       "bankDocument",
     ];
 
-    for (const field of fileFields) {
+for (const field of fileFields) {
       if (req.files[field]) {
         const file = req.files[field][0];
-        const url = await uploadFileToDrive(
+        const uploadedDocument = await uploadFileToDrive(
           file.buffer,
           file.originalname,
           file.mimetype,
           filePrefix,
         );
-        newDocumentUrls[`${field}Url`] = url;
+        newDocumentUrls[`${field}Url`] = uploadedDocument.url; 
       }
     }
 
