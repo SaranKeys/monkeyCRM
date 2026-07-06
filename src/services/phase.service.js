@@ -160,7 +160,6 @@ export const addTaskUpdateReply = async (updateId, authorId, text) => {
 
 export const addTaskTimeLog = async (taskId, authorId, data) => {
     return await prisma.$transaction(async (tx) => {
-
         const log = await tx.taskTimeLog.create({
             data: {
                 hours: data.hours,
@@ -174,10 +173,16 @@ export const addTaskTimeLog = async (taskId, authorId, data) => {
             }
         });
 
+        const currentTask = await tx.phaseTask.findUnique({ 
+            where: { id: taskId } 
+        });
+
+        const currentLoggedHours = currentTask.loggedHours || 0;
+
         await tx.phaseTask.update({
             where: { id: taskId },
             data: {
-                loggedHours: { increment: data.hours }
+                loggedHours: currentLoggedHours + data.hours
             }
         });
 
