@@ -19,3 +19,15 @@ export const handleLogin = async (req, res, next) => {
         });
     }
 };
+
+export const getMe = async (req, res) => {
+    try {
+        const userData = await authService.getMe(req.user.id);
+        return res.status(200).json({
+            status: 'success',
+            data: userData
+        });
+    } catch (error) {
+        return res.status(401).json({ status: 'fail', message: error.message });
+    }
+};

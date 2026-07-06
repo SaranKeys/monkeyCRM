@@ -28,7 +28,8 @@ export const loginUser = async (email, password) => {
                 email, 
                 role: 'ADMIN', 
                 name: 'Super Admin',
-                employeeProfile: adminDbUser?.employeeProfile 
+                employeeProfile: adminDbUser?.employeeProfile,
+                permissions: null 
             } 
         };
     }
@@ -59,6 +60,14 @@ export const loginUser = async (email, password) => {
         throw error;
     }
 
+    let userPermissions = null;
+    if (dbUser.employeeProfile?.designation) {
+        const roleRecord = await prisma.companyRole.findUnique({
+            where: { name: dbUser.employeeProfile.designation }
+        });
+        userPermissions = roleRecord?.permissions || null;
+    }
+
     const payload = {
         id: dbUser.id,
         role: dbUser.role, 
@@ -73,7 +82,34 @@ export const loginUser = async (email, password) => {
             id: dbUser.id,
             email: dbUser.email,
             role: dbUser.role,
-            employeeProfile: dbUser.employeeProfile 
+            employeeProfile: dbUser.employeeProfile,
+            permissions: userPermissions 
         }
+    };
+};
+
+
+export const getMe = async (userId) => {
+    const dbUser = await prisma.user.findUnique({
+        where: { id: userId },
+        include: { employeeProfile: true }
+    });
+
+    if (!dbUser) throw new Error("User not found");
+
+    let userPermissions = null;
+    if (dbUser.employeeProfile?.designation) {
+        const roleRecord = await prisma.companyRole.findUnique({
+            where: { name: dbUser.employeeProfile.designation }
+        });
+        userPermissions = roleRecord?.permissions || null;
+    }
+
+    return {
+        id: dbUser.id,
+        email: dbUser.email,
+        role: dbUser.role,
+        employeeProfile: dbUser.employeeProfile,
+        permissions: userPermissions 
     };
 };
