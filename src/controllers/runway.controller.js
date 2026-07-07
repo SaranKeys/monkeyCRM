@@ -1,3 +1,4 @@
+import { logActivity } from "../services/activity.service.js";
 import * as runwayService from "../services/runway.service.js";
 import {
   runwayItemSchema,
@@ -110,7 +111,7 @@ export const deleteItem = async (req, res) => {
         `deleted a runway item: ${itemToDelete.title}`
       );
     }
-    
+
     return res
       .status(200)
       .json({ status: "success", message: "Deleted successfully." });

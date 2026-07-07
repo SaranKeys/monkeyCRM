@@ -1,3 +1,4 @@
+import { logActivity } from "../services/activity.service.js";
 import * as ticketService from "../services/ticket.service.js";
 import {
   createCommentSchema,

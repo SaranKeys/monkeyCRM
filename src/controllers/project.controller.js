@@ -1,4 +1,5 @@
 import prisma from "../config/prisma.js";
+import { logActivity } from "../services/activity.service.js";
 import * as projectService from "../services/project.service.js";
 import { createProjectSchema, updateProjectSchema } from "../validations/project.validation.js";
 

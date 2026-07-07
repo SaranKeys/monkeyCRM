@@ -1,3 +1,4 @@
+import { logActivity } from '../services/activity.service.js';
 import { uploadFileToDrive } from '../services/drive.service.js';
 import * as updateService from '../services/update.service.js';
 import { createUpdateSchema, updateStatusSchema, replySchema } from '../validations/update.validation.js';
