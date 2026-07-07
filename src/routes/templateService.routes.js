@@ -1,15 +1,33 @@
 import { Router } from 'express';
 import * as serviceController from '../controllers/templateService.controller.js';
-import { authenticate, restrictTo } from '../middlewares/auth.middleware.js';
+import { authenticate, checkPermission } from '../middlewares/auth.middleware.js';
 
 const router = Router();
 
-router.post('/create', authenticate, restrictTo('ADMIN'), serviceController.createService);
+router.use(authenticate);
 
-// to fetch fields for creation of project
-router.get('/', authenticate, restrictTo('ADMIN'), serviceController.getActiveServices);
+router.post(
+    '/create', 
+    checkPermission("Projects", "createProject"), 
+    serviceController.createService
+);
 
-router.put('/:id', authenticate, restrictTo('ADMIN'), serviceController.updateService);
-router.delete('/:id', authenticate, restrictTo('ADMIN'), serviceController.deleteService);
+router.get(
+    '/', 
+    checkPermission("Projects", "viewProjects"), 
+    serviceController.getActiveServices
+);
+
+router.put(
+    '/:id', 
+    checkPermission("Projects", "createProject"), 
+    serviceController.updateService
+);
+
+router.delete(
+    '/:id', 
+    checkPermission("Projects", "createProject"), 
+    serviceController.deleteService
+);
 
 export default router;
