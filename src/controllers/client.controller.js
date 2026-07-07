@@ -1,6 +1,9 @@
 import * as clientService from "../services/client.service.js";
 import { uploadFileToDrive } from "../services/drive.service.js";
-import { registerClientSchema, updateClientSchema } from "../validations/client.validation.js";
+import {
+  registerClientSchema,
+  updateClientSchema,
+} from "../validations/client.validation.js";
 
 export const registerClient = async (req, res) => {
   try {
@@ -74,7 +77,9 @@ export const registerClient = async (req, res) => {
 
     keys.forEach((key, index) => {
       if (results[index]) {
-        resolvedUrls[key] = results[index];
+        resolvedUrls[key] = results[index].url
+          ? results[index].url
+          : results[index];
       }
     });
 
@@ -109,21 +114,21 @@ export const registerClient = async (req, res) => {
 };
 
 export const getAllClients = async (req, res) => {
-    try {
-        const page = parseInt(req.query.page, 10) || 1;
-        const limit = parseInt(req.query.limit, 10) || 10;
-        const search = req.query.search || "";
+  try {
+    const page = parseInt(req.query.page, 10) || 1;
+    const limit = parseInt(req.query.limit, 10) || 10;
+    const search = req.query.search || "";
 
-        const result = await clientService.getAllClients(page, limit, search);
+    const result = await clientService.getAllClients(page, limit, search);
 
-        return res.status(200).json({ 
-            status: 'success', 
-            data: result.clients,
-            pagination: result.pagination 
-        });
-    } catch (error) {
-        return res.status(500).json({ status: 'fail', message: error.message });
-    }
+    return res.status(200).json({
+      status: "success",
+      data: result.clients,
+      pagination: result.pagination,
+    });
+  } catch (error) {
+    return res.status(500).json({ status: "fail", message: error.message });
+  }
 };
 
 export const getClientById = async (req, res) => {
@@ -155,13 +160,11 @@ export const updateClient = async (req, res) => {
       validationResult.data.body,
     );
 
-    return res
-      .status(200)
-      .json({
-        status: "success",
-        message: "Client updated successfully.",
-        data: updatedClient,
-      });
+    return res.status(200).json({
+      status: "success",
+      message: "Client updated successfully.",
+      data: updatedClient,
+    });
   } catch (error) {
     return res.status(500).json({ status: "fail", message: error.message });
   }
@@ -185,13 +188,15 @@ export const updateClientDocuments = async (req, res) => {
     for (const field of fileFields) {
       if (req.files[field]) {
         const file = req.files[field][0];
-        const url = await uploadFileToDrive(
+        const uploadResult = await uploadFileToDrive(
           file.buffer,
           file.originalname,
           file.mimetype,
           filePrefix,
         );
-        newDocumentUrls[`${field}Url`] = url;
+        newDocumentUrls[`${field}Url`] = uploadResult.url
+          ? uploadResult.url
+          : uploadResult;
       }
     }
 
@@ -199,21 +204,17 @@ export const updateClientDocuments = async (req, res) => {
       req.params.id,
       newDocumentUrls,
     );
-    return res
-      .status(200)
-      .json({
-        status: "success",
-        message: "Client documents updated.",
-        data: updatedClient,
-      });
+    return res.status(200).json({
+      status: "success",
+      message: "Client documents updated.",
+      data: updatedClient,
+    });
   } catch (error) {
     console.error("[Client Document Update Error]:", error);
-    return res
-      .status(500)
-      .json({
-        status: "fail",
-        message: error.message || "Internal Server Error",
-      });
+    return res.status(500).json({
+      status: "fail",
+      message: error.message || "Internal Server Error",
+    });
   }
 };
 
