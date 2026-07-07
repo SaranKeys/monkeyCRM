@@ -58,7 +58,7 @@ export const getAllProjects = async (req, res) => {
       health: req.query.health || "",
     };
 
-    const result = await projectService.getAllProjects(page, limit, filters);
+    const result = await projectService.getAllProjects(page, limit, filters, req.user);
 
     return res.status(200).json({
       status: "success",

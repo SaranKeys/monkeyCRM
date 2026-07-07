@@ -35,23 +35,43 @@ export const createProject = async (projectData) => {
   });
 };
 
-export const getAllProjects = async (page = 1, limit = 9, filters = {}) => {
+export const getAllProjects = async (page = 1, limit = 9, filters = {}, user) => {
   const skip = (page - 1) * limit;
   const { search, status, priority, health } = filters;
 
-  const whereClause = {};
+  let employeeProfileId = null;
+  if (user && user.role !== "ADMIN") {
+    const profile = await prisma.employeeProfile.findUnique({
+      where: { userId: user.id }
+    });
+    if (profile) employeeProfileId = profile.id;
+  }
 
-  if (status && status !== "All") whereClause.status = status;
-  if (priority && priority !== "All priorities")
-    whereClause.priority = priority;
+  const AND = [];
+
+  if (user && user.role !== "ADMIN" && employeeProfileId) {
+    AND.push({
+      OR: [
+        { leadId: employeeProfileId }, 
+        { memberIds: { has: employeeProfileId } } 
+      ]
+    });
+  }
+
+  if (status && status !== "All") AND.push({ status });
+  if (priority && priority !== "All priorities") AND.push({ priority });
 
   if (search) {
-    whereClause.OR = [
-      { name: { contains: search, mode: "insensitive" } },
-      { client: { companyName: { contains: search, mode: "insensitive" } } },
-      { lead: { legalName: { contains: search, mode: "insensitive" } } },
-    ];
+    AND.push({
+      OR: [
+        { name: { contains: search, mode: "insensitive" } },
+        { client: { companyName: { contains: search, mode: "insensitive" } } },
+        { lead: { legalName: { contains: search, mode: "insensitive" } } },
+      ]
+    });
   }
+
+  const whereClause = AND.length > 0 ? { AND } : {};
 
   const [totalProjects, projects] = await Promise.all([
     prisma.project.count({ where: whereClause }),
