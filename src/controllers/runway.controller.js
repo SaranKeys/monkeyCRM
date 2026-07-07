@@ -21,6 +21,14 @@ export const createItem = async (req, res) => {
         .json({ status: "fail", errors: validation.error.issues });
 
     const newItem = await runwayService.createRunwayItem(validation.data.body);
+
+    await logActivity(
+      newItem.projectId || validation.data.body.projectId,
+      req.user.id,
+      "CREATED_RUNWAY_ITEM",
+      `added a new item to the project runway: ${newItem.title}`
+    );
+
     return res.status(201).json({ status: "success", data: newItem });
   } catch (error) {
     return res.status(500).json({ status: "fail", message: error.message });
@@ -64,6 +72,14 @@ export const updateItem = async (req, res) => {
       req.params.id,
       validation.data.body,
     );
+
+    await logActivity(
+      updatedItem.projectId || validation.data.body.projectId,
+      req.user.id,
+      "UPDATED_RUNWAY_ITEM",
+      `updated a runway item: ${updatedItem.title}`
+    );
+
     return res.status(200).json({ status: "success", data: updatedItem });
   } catch (error) {
     if (error.code === "P2025")
@@ -82,7 +98,19 @@ export const deleteItem = async (req, res) => {
           message: "Clients cannot delete runway items.",
         });
 
+   const itemToDelete = await runwayService.getRunwayItemById(req.params.id);
+    
     await runwayService.deleteRunwayItem(req.params.id);
+    
+    if (itemToDelete) {
+      await logActivity(
+        itemToDelete.projectId,
+        req.user.id,
+        "DELETED_RUNWAY_ITEM",
+        `deleted a runway item: ${itemToDelete.title}`
+      );
+    }
+    
     return res
       .status(200)
       .json({ status: "success", message: "Deleted successfully." });

@@ -41,6 +41,13 @@ export const createTicket = async (req, res) => {
       creatorId,
     );
 
+    await logActivity(
+      newTicket.projectId,
+      creatorId,
+      "CREATED_TICKET",
+      `raised a new ticket: ${newTicket.subject}`
+    );
+
     return res.status(201).json({ status: "success", data: newTicket });
   } catch (error) {
     return res.status(500).json({ status: "fail", message: error.message });
@@ -88,6 +95,14 @@ export const updateTicket = async (req, res) => {
       req.params.id,
       validationResult.data.body,
     );
+
+    await logActivity(
+      updatedTicket.projectId,
+      req.user.id,
+      "UPDATED_TICKET",
+      `updated ticket status/details for: ${updatedTicket.ticketNumber || updatedTicket.subject}`
+    );
+    
     return res.status(200).json({ status: "success", data: updatedTicket });
   } catch (error) {
     if (error.code === "P2025")
@@ -100,15 +115,22 @@ export const updateTicket = async (req, res) => {
 
 export const deleteTicket = async (req, res) => {
   try {
+    const ticketToDelete = await ticketService.getTicketById(req.params.id);
+    
     await ticketService.deleteTicket(req.params.id);
-    return res
-      .status(200)
-      .json({ status: "success", message: "Ticket permanently deleted." });
+    
+    if (ticketToDelete) {
+      await logActivity(
+        ticketToDelete.projectId,
+        req.user.id,
+        "DELETED_TICKET",
+        `deleted ticket: ${ticketToDelete.ticketNumber || ticketToDelete.subject}`
+      );
+    }
+
+    return res.status(200).json({ status: "success", message: "Ticket permanently deleted." });
   } catch (error) {
-    if (error.code === "P2025")
-      return res
-        .status(404)
-        .json({ status: "fail", message: "Ticket not found." });
+    if (error.code === "P2025") return res.status(404).json({ status: "fail", message: "Ticket not found." });
     return res.status(500).json({ status: "fail", message: error.message });
   }
 };
@@ -144,6 +166,16 @@ export const addCommentToTicket = async (req, res) => {
       authorId,
       validationResult.data.body.text,
     );
+
+    const ticket = await ticketService.getTicketById(req.params.id);
+    if (ticket) {
+      await logActivity(
+        ticket.projectId,
+        authorId,
+        "COMMENTED_TICKET",
+        `commented on ticket: ${ticket.ticketNumber || ticket.subject}`
+      );
+    }
 
     return res.status(201).json({ status: "success", data: newComment });
   } catch (error) {

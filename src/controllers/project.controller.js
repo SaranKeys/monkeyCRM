@@ -1,3 +1,4 @@
+import prisma from "../config/prisma.js";
 import * as projectService from "../services/project.service.js";
 import { createProjectSchema, updateProjectSchema } from "../validations/project.validation.js";
 
@@ -147,6 +148,14 @@ export const updateProject = async (req, res) => {
         field: e.path.join("."),
         message: e.message,
       }));
+
+      await logActivity(
+      updatedProject.id,
+      req.user.id,
+      "UPDATED_PROJECT",
+      "updated core project details"
+    );
+
       return res.status(400).json({ status: "fail", errors: structuralErrors });
     }
 
@@ -171,5 +180,43 @@ export const updateProject = async (req, res) => {
       status: "fail",
       message: error.message || "Internal Server Error",
     });
+  }
+};
+
+export const getProjectActivity = async (req, res) => {
+  try {
+    const { projectId } = req.params;
+    const { date } = req.query;  
+
+    const whereClause = { projectId: projectId };
+
+    if (date) {
+      const searchDate = new Date(date);
+      const startOfDay = new Date(searchDate.setHours(0, 0, 0, 0));
+      const endOfDay = new Date(searchDate.setHours(23, 59, 59, 999));
+
+      whereClause.createdAt = {
+        gte: startOfDay,  
+        lte: endOfDay,    
+      };
+    }
+
+    const logs = await prisma.projectActivityLog.findMany({
+      where: whereClause,
+      orderBy: { createdAt: "desc" },  
+      include: {
+        actor: {
+          select: {
+            employeeProfile: {
+              select: { legalName: true, profilePhotoUrl: true }
+            }
+          }
+        }
+      }
+    });
+
+    return res.status(200).json({ status: "success", data: logs });
+  } catch (error) {
+    return res.status(500).json({ status: "fail", message: error.message });
   }
 };

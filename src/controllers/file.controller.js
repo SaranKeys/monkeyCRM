@@ -1,4 +1,5 @@
 import prisma from "../config/prisma.js";
+import { logActivity } from "../services/activity.service.js";
 import {
   uploadFileToDrive,
   deleteFileFromDrive,
@@ -38,6 +39,14 @@ export const uploadProjectFile = async (req, res) => {
         uploaderId: req.user.id,
       },
     });
+
+
+    await logActivity(
+      projectId,
+      req.user.id,
+      "UPLOADED_FILE",
+      `uploaded a new file: ${file.originalname}`
+    );
 
     return res.status(201).json({ status: "success", data: newFile });
   } catch (error) {
@@ -84,9 +93,18 @@ export const deleteProjectFile = async (req, res) => {
 
     await prisma.projectFile.delete({ where: { id: fileId } });
 
+    await logActivity(
+      fileRecord.projectId,
+      req.user.id,
+      "DELETED_FILE",
+      `deleted a file: ${fileRecord.name}`
+    );
+
     return res
       .status(200)
       .json({ status: "success", message: "File deleted successfully" });
+
+
   } catch (error) {
     return res.status(500).json({ status: "fail", message: error.message });
   }

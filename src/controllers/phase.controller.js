@@ -20,6 +20,14 @@ export const addPhase = async (req, res) => {
         .json({ status: "fail", errors: validation.error.issues });
 
     const phase = await phaseService.createPhase(validation.data.body);
+
+    await logActivity(
+      phase.projectId || req.body.projectId, 
+      req.user.id, 
+      "CREATED_PHASE", 
+      `added a new phase: ${phase.name}`
+    );
+
     return res.status(201).json({ status: "success", data: phase });
   } catch (error) {
     return res.status(500).json({ status: "fail", message: error.message });
@@ -60,6 +68,14 @@ export const editPhase = async (req, res) => {
       req.params.id,
       validation.data.body,
     );
+
+    await logActivity(
+      phase.projectId || req.body.projectId, 
+      req.user.id, 
+      "UPDATED_PHASE", 
+      `updated phase details for: ${phase.name || 'a phase'}`
+    );
+
     return res.status(200).json({ status: "success", data: phase });
   } catch (error) {
     return res.status(500).json({ status: "fail", message: error.message });
@@ -75,6 +91,12 @@ export const addSubPhase = async (req, res) => {
         .json({ status: "fail", errors: validation.error.issues });
 
     const subPhase = await phaseService.createSubPhase(validation.data.body);
+
+    const projectId = req.body.projectId || subPhase.phase?.projectId;
+    if (projectId) {
+      await logActivity(projectId, req.user.id, "CREATED_SUB_PHASE", `added a sub-phase: ${subPhase.name}`);
+    }
+
     return res.status(201).json({ status: "success", data: subPhase });
   } catch (error) {
     return res.status(500).json({ status: "fail", message: error.message });
@@ -90,6 +112,12 @@ export const addTask = async (req, res) => {
         .json({ status: "fail", errors: validation.error.issues });
 
     const task = await phaseService.createTask(validation.data.body);
+
+    const projectId = req.body.projectId || task.phase?.projectId;
+    if (projectId) {
+      await logActivity(projectId, req.user.id, "CREATED_TASK", `created a new task: ${task.title}`);
+    }
+
     return res.status(201).json({ status: "success", data: task });
   } catch (error) {
     return res.status(500).json({ status: "fail", message: error.message });
@@ -110,6 +138,17 @@ export const editTask = async (req, res) => {
       req.params.taskId,
       validation.data.body,
     );
+
+    const projectId = req.body.projectId || task.phase?.projectId;
+    if (projectId) {
+      await logActivity(
+        projectId, 
+        req.user.id, 
+        "UPDATED_TASK", 
+        `updated task: ${task.title} ${req.body.status ? `to ${req.body.status}` : ''}`
+      );
+    }
+
     return res.status(200).json({ status: "success", data: task });
   } catch (error) {
     return res.status(500).json({ status: "fail", message: error.message });
@@ -119,6 +158,16 @@ export const editTask = async (req, res) => {
 export const deletePhase = async (req, res) => {
   try {
     await phaseService.deletePhase(req.params.id);
+
+    if (deletedPhase && deletedPhase.projectId) {
+      await logActivity(
+        deletedPhase.projectId, 
+        req.user.id, 
+        "DELETED_PHASE", 
+        `deleted phase: ${deletedPhase.name}`
+      );
+    }
+
     return res
       .status(200)
       .json({
@@ -146,6 +195,12 @@ export const editSubPhase = async (req, res) => {
       req.params.subPhaseId,
       validation.data.body,
     );
+
+    const projectId = req.body.projectId || subPhase.phase?.projectId;
+    if (projectId) {
+      await logActivity(projectId, req.user.id, "UPDATED_SUB_PHASE", `updated sub-phase: ${subPhase.name}`);
+    }
+
     return res.status(200).json({ status: "success", data: subPhase });
   } catch (error) {
     if (error.code === "P2025")
@@ -159,6 +214,11 @@ export const editSubPhase = async (req, res) => {
 export const removeSubPhase = async (req, res) => {
   try {
     await phaseService.deleteSubPhase(req.params.subPhaseId);
+
+    if (projectId) {
+      await logActivity(projectId, req.user.id, "DELETED_SUB_PHASE", `deleted sub-phase: ${deletedSubPhase.name}`);
+    }
+
     return res
       .status(200)
       .json({
@@ -177,6 +237,12 @@ export const removeSubPhase = async (req, res) => {
 export const removeTask = async (req, res) => {
   try {
     await phaseService.deleteTask(req.params.taskId);
+
+    const projectId = req.body.projectId || deletedTask?.phase?.projectId;
+    if (projectId) {
+      await logActivity(projectId, req.user.id, "DELETED_TASK", `deleted a task: ${deletedTask.title}`);
+    }
+
     return res
       .status(200)
       .json({ status: "success", message: "Task deleted successfully." });
@@ -196,6 +262,12 @@ export const postTaskUpdate = async (req, res) => {
         if (!validation.success) return res.status(400).json({ status: "fail", errors: validation.error.issues });
 
         const update = await phaseService.createTaskUpdate(req.params.taskId, req.user.id, validation.data.body);
+
+        const projectId = req.body.projectId || update?.task?.phase?.projectId;
+    if (projectId) {
+      await logActivity(projectId, req.user.id, "POSTED_UPDATE", `posted a task update`);
+    }
+
         return res.status(201).json({ status: "success", data: update });
     } catch (error) {
         return res.status(500).json({ status: "fail", message: error.message });
@@ -217,6 +289,12 @@ export const postTaskReply = async (req, res) => {
         if (!validation.success) return res.status(400).json({ status: "fail", errors: validation.error.issues });
 
         const reply = await phaseService.addTaskUpdateReply(req.params.updateId, req.user.id, validation.data.body.text);
+
+        const projectId = req.body.projectId || reply?.update?.task?.phase?.projectId;
+    if (projectId) {
+      await logActivity(projectId, req.user.id, "POSTED_REPLY", `replied to a task update`);
+    }
+
         return res.status(201).json({ status: "success", data: reply });
     } catch (error) {
         return res.status(500).json({ status: "fail", message: error.message });
@@ -229,6 +307,12 @@ export const postTimeLog = async (req, res) => {
         if (!validation.success) return res.status(400).json({ status: "fail", errors: validation.error.issues });
 
         const timeLog = await phaseService.addTaskTimeLog(req.params.taskId, req.user.id, validation.data.body);
+
+        const projectId = req.body.projectId || timeLog?.task?.phase?.projectId;
+    if (projectId) {
+      await logActivity(projectId, req.user.id, "LOGGED_TIME", `logged ${validation.data.body.hours} hours on a task`);
+    }
+
         return res.status(201).json({ status: "success", data: timeLog });
     } catch (error) {
         return res.status(500).json({ status: "fail", message: error.message });

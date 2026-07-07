@@ -45,4 +45,11 @@ router.get(
   checkPermission("Projects", "viewProjects"),
   projectController.fetchProjectTeam
 );
+
+router.get(
+  "/:projectId/activity",
+  authenticate,
+  checkPermission("Projects", "viewProjects"),
+  projectController.getProjectActivity
+);
 export default router;

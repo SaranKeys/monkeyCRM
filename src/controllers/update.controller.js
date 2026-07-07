@@ -48,6 +48,13 @@ export const createProjectUpdate = async (req, res) => {
         const authorId = req.user?.id || req.user?._id || req.user?.userId;
         const newUpdate = await updateService.createUpdate(validation.data.body, authorId);
 
+        await logActivity(
+            projectId,
+            authorId,
+            "POSTED_UPDATE",
+            "posted a project update"
+        );
+
         return res.status(201).json({ status: "success", data: newUpdate });
     } catch (error) {
         console.error("[Create Update Error]:", error);
@@ -75,6 +82,14 @@ export const patchUpdateStatus = async (req, res) => {
         if (!validation.success) return res.status(400).json({ status: "fail", errors: validation.error.issues });
 
         const updated = await updateService.editUpdateStatus(req.params.id, validation.data.body);
+        
+        await logActivity(
+            updated.projectId || req.body.projectId,
+            req.user.id,
+            "UPDATED_UPDATE_STATUS",
+            `changed a project update status to ${validation.data.body.approvalStatus}`
+        );
+        
         return res.status(200).json({ status: "success", data: updated });
     } catch (error) {
         return res.status(500).json({ status: "fail", message: error.message });
@@ -89,6 +104,16 @@ export const createReply = async (req, res) => {
         const authorId = req.user?.id || req.user?._id || req.user?.userId;
         const reply = await updateService.addReply(req.params.id, authorId, validation.data.body.text);
 
+        const projectId = req.body.projectId || reply?.update?.projectId;
+        if (projectId) {
+            await logActivity(
+                projectId,
+                authorId,
+                "POSTED_UPDATE_REPLY",
+                "replied to a project update"
+            );
+        }
+
         return res.status(201).json({ status: "success", data: reply });
     } catch (error) {
         return res.status(500).json({ status: "fail", message: error.message });
@@ -98,7 +123,19 @@ export const createReply = async (req, res) => {
 export const removeUpdate = async (req, res) => {
     try {
         if (req.user.role === 'CLIENT') return res.status(403).json({ status: "fail", message: "Access denied." });
-        await updateService.deleteUpdate(req.params.id);
+        
+        const deletedUpdate = await updateService.deleteUpdate(req.params.id);
+        
+        const projectId = req.body.projectId || deletedUpdate?.projectId;
+        if (projectId) {
+            await logActivity(
+                projectId,
+                req.user.id,
+                "DELETED_UPDATE",
+                "deleted a project update"
+            );
+        }
+
         return res.status(200).json({ status: "success", message: "Update deleted." });
     } catch (error) {
         return res.status(500).json({ status: "fail", message: error.message });

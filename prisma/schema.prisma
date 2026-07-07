@@ -147,6 +147,7 @@ model User {
   taskUpdateReplies TaskUpdateReply[] @relation("TaskUpdateReplyAuthor")
 
   timeLogs TaskTimeLog[] @relation("TimeLogAuthor")
+  activityLogs ProjectActivityLog[]
 
   uploadedFiles ProjectFile[] @relation("FileUploader")
 
@@ -369,6 +370,8 @@ model Project {
   chatMessages ChatMessage[]
 
   projectFiles ProjectFile[]
+
+  activityLogs ProjectActivityLog[]
   
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -655,4 +658,21 @@ model TaskTimeLog {
   updatedAt DateTime  @updatedAt
 
   @@map("task_time_logs")
+}
+
+model ProjectActivityLog {
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  
+  projectId String   @db.ObjectId
+  project   Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  actorId   String   @db.ObjectId
+  actor     User     @relation(fields: [actorId], references: [id]) // Who did it
+
+  action    String   // "CREATED_TASK", "RAISED_TICKET", "STATUS_CHANGE"
+  details   String   // "completed task: Order-status API" or "raised ticket TKT-031"
+
+  createdAt DateTime @default(now())
+
+  @@map("project_activity_logs")
 }
