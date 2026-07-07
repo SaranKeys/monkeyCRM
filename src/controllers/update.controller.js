@@ -4,20 +4,26 @@ import { createUpdateSchema, updateStatusSchema, replySchema } from '../validati
 
 export const createProjectUpdate = async (req, res) => {
     try {
-        if (req.user.role === 'CLIENT') return res.status(403).json({ status: "fail", message: "Clients cannot post official updates." });
+        if (req.user.role === 'CLIENT') {
+            return res.status(403).json({ status: "fail", message: "Clients cannot post official updates." });
+        }
 
         const { content, clientView, approvalStatus, projectId, assignedApproverId } = req.body;
 
         const attachments = [];
         if (req.files && req.files.length > 0) {
             const uploadPromises = req.files.map(async (file) => {
-                const url = await uploadFileToDrive(file.buffer, file.originalname, file.mimetype, 'update');
+                const uploadResult = await uploadFileToDrive(file.buffer, file.originalname, file.mimetype, 'update');
                 
                 let type = 'file';
                 if (file.mimetype.startsWith('video/')) type = 'video';
                 if (file.mimetype.startsWith('image/')) type = 'image';
 
-                return { name: file.originalname, url, type };
+                return { 
+                    name: file.originalname, 
+                    url: uploadResult.url, 
+                    type 
+                };
             });
             
             const uploadedFiles = await Promise.all(uploadPromises);
