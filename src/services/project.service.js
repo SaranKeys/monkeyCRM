@@ -86,6 +86,11 @@ export const getAllProjects = async (page = 1, limit = 9, filters = {}, user) =>
         members: { select: { id: true, legalName: true } },
         milestones: { select: { id: true, isCompleted: true, dueDate: true } },
         service: { select: { name: true, icon: true } },
+        phases: { 
+          select: { 
+            tasks: { select: { status: true } } 
+          } 
+        }
       },
     }),
   ]);
@@ -93,15 +98,16 @@ export const getAllProjects = async (page = 1, limit = 9, filters = {}, user) =>
   const now = new Date();
 
   const formattedProjects = projects.map((project) => {
-    const totalMilestones = project.milestones.length;
-    const completedMilestones = project.milestones.filter(
-      (m) => m.isCompleted,
-    ).length;
+
+    const totalTasks = project.phases.reduce((acc, phase) => acc + phase.tasks.length, 0);
+    const completedTasks = project.phases.reduce((acc, phase) => {
+      return acc + phase.tasks.filter(t => t.status === "DONE").length;
+    }, 0);
 
     const progressPercentage =
-      totalMilestones === 0
+      totalTasks === 0
         ? 0
-        : Math.round((completedMilestones / totalMilestones) * 100);
+        : Math.round((completedTasks / totalTasks) * 100);
 
     const latestMilestone = project.milestones.reduce((latest, current) => {
       return !latest || new Date(current.dueDate) > new Date(latest.dueDate)
@@ -114,7 +120,7 @@ export const getAllProjects = async (page = 1, limit = 9, filters = {}, user) =>
     );
     const calculatedHealth = hasOverdueMilestones ? "AT_RISK" : "ON_TRACK";
 
-    const { milestones, ...projectData } = project;
+    const { milestones, phases, ...projectData } = project;
 
     return {
       ...projectData,
@@ -167,22 +173,19 @@ export const getProjectById = async (projectId) => {
     where: { id: projectId },
     include: {
       client: {
-        select: {
-          id: true,
-          companyName: true,
-          contactName: true,
-          contactEmail: true,
-        },
+        select: { id: true, companyName: true, contactName: true, contactEmail: true },
       },
-
       service: {
         select: { id: true, name: true, icon: true, page2Fields: true },
       },
-
       lead: { select: { id: true, legalName: true, designation: true } },
       members: { select: { id: true, legalName: true, designation: true } },
-
       milestones: { orderBy: { dueDate: "asc" } },
+      phases: { 
+        select: { 
+          tasks: { select: { status: true } } 
+        } 
+      }
     },
   });
 
@@ -193,15 +196,16 @@ export const getProjectById = async (projectId) => {
   }
 
   const now = new Date();
-  const totalMilestones = project.milestones.length;
-  const completedMilestones = project.milestones.filter(
-    (m) => m.isCompleted,
-  ).length;
+
+  const totalTasks = project.phases.reduce((acc, phase) => acc + phase.tasks.length, 0);
+  const completedTasks = project.phases.reduce((acc, phase) => {
+    return acc + phase.tasks.filter(t => t.status === "DONE").length;
+  }, 0);
 
   const progressPercentage =
-    totalMilestones === 0
+    totalTasks === 0
       ? 0
-      : Math.round((completedMilestones / totalMilestones) * 100);
+      : Math.round((completedTasks / totalTasks) * 100);
 
   const latestMilestone = project.milestones.reduce((latest, current) => {
     return !latest || new Date(current.dueDate) > new Date(latest.dueDate)
@@ -214,9 +218,11 @@ export const getProjectById = async (projectId) => {
   );
 
   const calculatedHealth = hasOverdueMilestones ? "AT_RISK" : "ON_TRACK";
+  
+  const { phases, ...projectData } = project;
 
   return {
-    ...project,
+    ...projectData,
     progressPercentage,
     dueDate: latestMilestone ? latestMilestone.dueDate : null,
     health: calculatedHealth,
