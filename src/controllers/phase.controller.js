@@ -1,4 +1,5 @@
 import { logActivity } from "../services/activity.service.js";
+import { uploadFileToDrive } from "../services/drive.service.js";
 import * as phaseService from "../services/phase.service.js";
 import {
   createPhaseSchema,
@@ -106,11 +107,43 @@ export const addSubPhase = async (req, res) => {
 
 export const addTask = async (req, res) => {
   try {
-    const validation = createTaskSchema.safeParse(req);
-    if (!validation.success)
-      return res
-        .status(400)
-        .json({ status: "fail", errors: validation.error.issues });
+    const attachments = [];
+    if (req.files && req.files.length > 0) {
+      const uploadPromises = req.files.map(async (file) => {
+        const uploadResult = await uploadFileToDrive(file.buffer, file.originalname, file.mimetype, 'task');
+        
+        let type = 'file';
+        if (file.mimetype.startsWith('video/')) type = 'video';
+        if (file.mimetype.startsWith('image/')) type = 'image';
+
+        return { 
+          name: file.originalname, 
+          url: uploadResult.url, 
+          type 
+        };
+      });
+      
+      const uploadedFiles = await Promise.all(uploadPromises);
+      attachments.push(...uploadedFiles);
+    }
+
+    const taskPayload = {
+      title: req.body.title,
+      description: req.body.description || null,
+      priority: req.body.priority || "MEDIUM",
+      status: req.body.status || "TO_DO",
+      startDate: req.body.startDate ? new Date(req.body.startDate) : undefined,
+      dueDate: req.body.dueDate ? new Date(req.body.dueDate) : undefined,
+      phaseId: req.body.phaseId,
+      subPhaseId: req.body.subPhaseId || undefined,
+      assigneeId: req.body.assigneeId || undefined,
+      attachments: attachments 
+    };
+
+    const validation = createTaskSchema.safeParse({ body: taskPayload });
+    if (!validation.success) {
+      return res.status(400).json({ status: "fail", errors: validation.error.issues });
+    }
 
     const task = await phaseService.createTask(validation.data.body);
 
@@ -121,6 +154,7 @@ export const addTask = async (req, res) => {
 
     return res.status(201).json({ status: "success", data: task });
   } catch (error) {
+    console.error("[Create Task Error]:", error);
     return res.status(500).json({ status: "fail", message: error.message });
   }
 };
@@ -129,11 +163,56 @@ export const editTask = async (req, res) => {
   try {
     if (req.body.assigneeId === "") req.body.assigneeId = null;
 
-    const validation = updateTaskSchema.safeParse(req);
-    if (!validation.success)
-      return res
-        .status(400)
-        .json({ status: "fail", errors: validation.error.issues });
+    const existingTask = await phaseService.getTaskDetails(req.params.taskId);
+    if (!existingTask) {
+      return res.status(404).json({ status: "fail", message: "Task not found" });
+    }
+
+    let newAttachments = [];
+    if (req.files && req.files.length > 0) {
+      const uploadPromises = req.files.map(async (file) => {
+        const uploadResult = await uploadFileToDrive(file.buffer, file.originalname, file.mimetype, 'task');
+        let type = 'file';
+        if (file.mimetype.startsWith('video/')) type = 'video';
+        if (file.mimetype.startsWith('image/')) type = 'image';
+        return { name: file.originalname, url: uploadResult.url, type };
+      });
+      newAttachments = await Promise.all(uploadPromises);
+    }
+
+    let finalAttachments = existingTask.attachments || [];
+    if (req.body.retainedAttachments) {
+      try {
+        finalAttachments = JSON.parse(req.body.retainedAttachments);
+      } catch (e) {
+        console.error("Failed to parse retained attachments");
+      }
+    }
+    
+    finalAttachments = [...finalAttachments, ...newAttachments];
+
+    const taskPayload = {
+      title: req.body.title,
+      description: req.body.description,
+      priority: req.body.priority,
+      status: req.body.status,
+      startDate: req.body.startDate,
+      dueDate: req.body.dueDate,
+      assigneeId: req.body.assigneeId,
+      estimatedHours: req.body.estimatedHours,
+      loggedHours: req.body.loggedHours,
+    };
+
+    Object.keys(taskPayload).forEach(key => taskPayload[key] === undefined && delete taskPayload[key]);
+
+    if (req.files?.length > 0 || req.body.retainedAttachments) {
+      taskPayload.attachments = finalAttachments;
+    }
+
+    const validation = updateTaskSchema.safeParse({ body: taskPayload });
+    if (!validation.success) {
+      return res.status(400).json({ status: "fail", errors: validation.error.issues });
+    }
 
     const task = await phaseService.updateTask(
       req.params.taskId,
@@ -152,6 +231,7 @@ export const editTask = async (req, res) => {
 
     return res.status(200).json({ status: "success", data: task });
   } catch (error) {
+    console.error("[Edit Task Error]:", error);
     return res.status(500).json({ status: "fail", message: error.message });
   }
 };
@@ -237,25 +317,33 @@ export const removeSubPhase = async (req, res) => {
 
 export const removeTask = async (req, res) => {
   try {
-    await phaseService.deleteTask(req.params.taskId);
+    const deletedTask = await phaseService.deleteTask(req.params.taskId);
 
-    const projectId = req.body.projectId || deletedTask?.phase?.projectId;
+    const projectId = req.body?.projectId || deletedTask?.phase?.projectId;
+    
     if (projectId) {
-      await logActivity(projectId, req.user.id, "DELETED_TASK", `deleted a task: ${deletedTask.title}`);
+      logActivity(
+        projectId, 
+        req.user.id, 
+        "DELETED_TASK", 
+        `deleted a task: ${deletedTask.title || "Unknown Task"}`
+      ).catch(err => console.error("[Activity Log Warning]: Failed to log task deletion", err));
     }
 
-    return res
-      .status(200)
-      .json({ status: "success", message: "Task deleted successfully." });
+    return res.status(200).json({ 
+      status: "success", 
+      message: "Task deleted successfully." 
+    });
+
   } catch (error) {
-    if (error.code === "P2025")
-      return res
-        .status(404)
-        .json({ status: "fail", message: "Task not found" });
-    return res.status(500).json({ status: "fail", message: error.message });
+    if (error.code === "P2025") {
+      return res.status(404).json({ status: "fail", message: "Task not found." });
+    }
+    
+    console.error("[Task Deletion Error]:", error);
+    return res.status(500).json({ status: "fail", message: "Internal server error during deletion." });
   }
 };
-
 
 export const postTaskUpdate = async (req, res) => {
     try {

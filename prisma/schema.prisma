@@ -408,8 +408,8 @@ model ProjectMilestone {
 }
 
 model Ticket {
-  id String @id @default(auto()) @map("_id") @db.ObjectId
 
+  id String @id @default(auto()) @map("_id") @db.ObjectId
   ticketNumber String @unique
 
   subject  String
@@ -420,8 +420,8 @@ model Ticket {
   projectId String  @db.ObjectId
   project   Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
 
-  creatorId String @db.ObjectId
-  creator   User   @relation("TicketCreator", fields: [creatorId], references: [id])
+  creatorId String? @db.ObjectId 
+  creator   User?   @relation("TicketCreator", fields: [creatorId], references: [id], onDelete: SetNull)
 
   assigneeId String?          @db.ObjectId
   assignee   EmployeeProfile? @relation("TicketAssignee", fields: [assigneeId], references: [id])
@@ -441,8 +441,8 @@ model TicketComment {
   ticketId String @db.ObjectId
   ticket   Ticket @relation(fields: [ticketId], references: [id], onDelete: Cascade)
 
-  authorId String @db.ObjectId
-  author   User   @relation("CommentAuthor", fields: [authorId], references: [id])
+  authorId String? @db.ObjectId 
+  author   User?   @relation("CommentAuthor", fields: [authorId], references: [id], onDelete: SetNull)
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -456,15 +456,14 @@ model ProjectUpdate {
   content String
 
   attachments Attachment[]
-
   clientView     Boolean        @default(true)
   approvalStatus ApprovalStatus @default(NONE)
 
   projectId String  @db.ObjectId
   project   Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
 
-  authorId String @db.ObjectId
-  author   User   @relation("UpdateAuthor", fields: [authorId], references: [id])
+  authorId String? @db.ObjectId 
+  author   User?   @relation("UpdateAuthor", fields: [authorId], references: [id], onDelete: SetNull)
 
   replies UpdateReply[]
 
@@ -485,8 +484,8 @@ model UpdateReply {
   updateId String        @db.ObjectId
   update   ProjectUpdate @relation(fields: [updateId], references: [id], onDelete: Cascade)
 
-  authorId String @db.ObjectId
-  author   User   @relation("UpdateReplyAuthor", fields: [authorId], references: [id])
+  authorId String? @db.ObjectId 
+  author   User?   @relation("UpdateReplyAuthor", fields: [authorId], references: [id], onDelete: SetNull)
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -542,6 +541,10 @@ model PhaseSubPhase {
 model PhaseTask {
   id          String          @id @default(auto()) @map("_id") @db.ObjectId
   title       String
+
+  description    String?
+  attachments    Attachment[]
+  
   startDate   DateTime?
   dueDate     DateTime?
 
@@ -577,8 +580,8 @@ model ChatMessage {
   projectId String   @db.ObjectId
   project   Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
 
-  senderId  String          @db.ObjectId
-  sender    EmployeeProfile @relation("ChatSender", fields: [senderId], references: [id])
+  senderId  String?          @db.ObjectId 
+  sender    EmployeeProfile? @relation("ChatSender", fields: [senderId], references: [id], onDelete: SetNull)
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -596,26 +599,26 @@ model ProjectFile {
   projectId   String   @db.ObjectId
   project     Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
 
-  uploaderId  String   @db.ObjectId
-  uploader    User     @relation("FileUploader", fields: [uploaderId], references: [id])
+  uploaderId  String?   @db.ObjectId 
+  uploader    User?     @relation("FileUploader", fields: [uploaderId], references: [id], onDelete: SetNull)
 
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
   @@map("project_files")
-}
+} 
 
 
 model TaskUpdate {
   id        String         @id @default(auto()) @map("_id") @db.ObjectId
   content   String
-  type      TaskUpdateType @default(UPDATE) // UPDATE or QUESTION
+  type      TaskUpdateType @default(UPDATE) 
 
   taskId    String         @db.ObjectId
   task      PhaseTask      @relation(fields: [taskId], references: [id], onDelete: Cascade)
 
-  authorId  String         @db.ObjectId
-  author    User           @relation("TaskUpdateAuthor", fields: [authorId], references: [id])
+  authorId  String?        @db.ObjectId 
+  author    User?          @relation("TaskUpdateAuthor", fields: [authorId], references: [id], onDelete: SetNull)
 
   replies   TaskUpdateReply[]
 
@@ -632,15 +635,14 @@ model TaskUpdateReply {
   updateId  String         @db.ObjectId
   update    TaskUpdate     @relation(fields: [updateId], references: [id], onDelete: Cascade)
 
-  authorId  String         @db.ObjectId
-  author    User           @relation("TaskUpdateReplyAuthor", fields: [authorId], references: [id])
+  authorId  String?        @db.ObjectId 
+  author    User?          @relation("TaskUpdateReplyAuthor", fields: [authorId], references: [id], onDelete: SetNull)
 
   createdAt DateTime       @default(now())
   updatedAt DateTime       @updatedAt
 
   @@map("task_update_replies")
 }
-
 
 model TaskTimeLog {
   id        String    @id @default(auto()) @map("_id") @db.ObjectId
@@ -651,8 +653,8 @@ model TaskTimeLog {
   taskId    String    @db.ObjectId
   task      PhaseTask @relation(fields: [taskId], references: [id], onDelete: Cascade)
 
-  authorId  String    @db.ObjectId
-  author    User      @relation("TimeLogAuthor", fields: [authorId], references: [id])
+  authorId  String?   @db.ObjectId 
+  author    User?     @relation("TimeLogAuthor", fields: [authorId], references: [id], onDelete: SetNull)
 
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt
@@ -666,11 +668,11 @@ model ProjectActivityLog {
   projectId String   @db.ObjectId
   project   Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
 
-  actorId   String   @db.ObjectId
-  actor     User     @relation(fields: [actorId], references: [id]) // Who did it
+  actorId   String?  @db.ObjectId 
+  actor     User?    @relation(fields: [actorId], references: [id], onDelete: SetNull)
 
-  action    String   // "CREATED_TASK", "RAISED_TICKET", "STATUS_CHANGE"
-  details   String   // "completed task: Order-status API" or "raised ticket TKT-031"
+  action    String   
+  details   String   
 
   createdAt DateTime @default(now())
 

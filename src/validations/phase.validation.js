@@ -49,26 +49,47 @@ export const createTaskSchema = z.object({
     title: z.string().min(1),
     priority: PriorityEnum.default("MEDIUM"),
     status: TaskStatusEnum.default("TO_DO"),
-    startDate: z.coerce.date().optional(),
-    dueDate: z.coerce.date().optional(),
+    startDate: z.coerce.date().optional().nullable(),
+    dueDate: z.coerce.date().optional().nullable(),
     phaseId: objectIdSchema,
     subPhaseId: objectIdSchema.optional().nullable(),
     assigneeId: objectIdSchema.optional().nullable(),
+
+    description: z.string().optional().nullable(),
+    attachments: z.array(
+      z.object({
+        name: z.string(),
+        url: z.string(),
+        type: z.string(),
+      })
+    ).optional(),
   }),
 });
+
 
 export const updateTaskSchema = z.object({
   body: z.object({
     title: z.string().min(1).optional(),
     priority: PriorityEnum.optional(),
     status: TaskStatusEnum.optional(),
-    startDate: z.coerce.date().optional(),
-    dueDate: z.coerce.date().optional(),
+    startDate: z.coerce.date().optional().nullable(),
+    dueDate: z.coerce.date().optional().nullable(),
     assigneeId: objectIdSchema.optional().nullable(),
-    estimatedHours: z.number().int().nonnegative().optional(),
-    loggedHours: z.number().int().nonnegative().optional(),
+    
+    estimatedHours: z.coerce.number().int().nonnegative().optional(),
+    loggedHours: z.coerce.number().int().nonnegative().optional(),
+    
+    description: z.string().optional().nullable(),
+    attachments: z.array(
+      z.object({
+        name: z.string(),
+        url: z.string(),
+        type: z.string(),
+      })
+    ).optional(),
   }),
 });
+
 
 export const updateSubPhaseSchema = z.object({
   body: z.object({

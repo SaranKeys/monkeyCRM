@@ -39,3 +39,26 @@ export const uploadClientDocs = upload.fields([
     { name: 'taxCert', maxCount: 1 },
     { name: 'brandAssets', maxCount: 1 }
 ]);
+
+
+// for attachments in TASKs
+const dynamicFileFilter = (req, file, cb) => {
+    if (
+        file.mimetype.startsWith('image/') || 
+        file.mimetype.startsWith('video/') || 
+        file.mimetype === 'application/pdf'
+    ) {
+        cb(null, true);
+    } else {
+        console.log(`[Upload Blocked] Name: ${file.originalname} | Mimetype sent: ${file.mimetype}`);
+        cb(new Error(`Invalid file type. Only Images, Videos, and PDFs are allowed for tasks.`), false);
+    }
+};
+
+const dynamicUpload = multer({
+    storage: multer.memoryStorage(),
+    fileFilter: dynamicFileFilter,
+    limits: { fileSize: 50 * 1024 * 1024 },  
+});
+
+export const uploadTaskFiles = dynamicUpload.array('files', 5);

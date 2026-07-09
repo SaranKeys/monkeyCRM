@@ -114,7 +114,12 @@ export const deleteSubPhase = async (subPhaseId) => {
 
 export const deleteTask = async (taskId) => {
     return await prisma.phaseTask.delete({
-        where: { id: taskId }
+        where: { id: taskId },
+        include: {
+            phase: {
+                select: { projectId: true }
+            }
+        }
     });
 };
 
