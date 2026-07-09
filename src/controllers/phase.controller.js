@@ -1,3 +1,4 @@
+import prisma from "../config/prisma.js";
 import { logActivity } from "../services/activity.service.js";
 import { uploadFileToDrive } from "../services/drive.service.js";
 import * as phaseService from "../services/phase.service.js";
@@ -24,10 +25,10 @@ export const addPhase = async (req, res) => {
     const phase = await phaseService.createPhase(validation.data.body);
 
     await logActivity(
-      phase.projectId || req.body.projectId, 
-      req.user.id, 
-      "CREATED_PHASE", 
-      `added a new phase: ${phase.name}`
+      phase.projectId || req.body.projectId,
+      req.user.id,
+      "CREATED_PHASE",
+      `added a new phase: ${phase.name}`,
     );
 
     return res.status(201).json({ status: "success", data: phase });
@@ -72,10 +73,10 @@ export const editPhase = async (req, res) => {
     );
 
     await logActivity(
-      phase.projectId || req.body.projectId, 
-      req.user.id, 
-      "UPDATED_PHASE", 
-      `updated phase details for: ${phase.name || 'a phase'}`
+      phase.projectId || req.body.projectId,
+      req.user.id,
+      "UPDATED_PHASE",
+      `updated phase details for: ${phase.name || "a phase"}`,
     );
 
     return res.status(200).json({ status: "success", data: phase });
@@ -83,6 +84,8 @@ export const editPhase = async (req, res) => {
     return res.status(500).json({ status: "fail", message: error.message });
   }
 };
+
+// =============
 
 export const addSubPhase = async (req, res) => {
   try {
@@ -96,7 +99,12 @@ export const addSubPhase = async (req, res) => {
 
     const projectId = req.body.projectId || subPhase.phase?.projectId;
     if (projectId) {
-      await logActivity(projectId, req.user.id, "CREATED_SUB_PHASE", `added a sub-phase: ${subPhase.name}`);
+      await logActivity(
+        projectId,
+        req.user.id,
+        "CREATED_SUB_PHASE",
+        `added a sub-phase: ${subPhase.name}`,
+      );
     }
 
     return res.status(201).json({ status: "success", data: subPhase });
@@ -105,24 +113,31 @@ export const addSubPhase = async (req, res) => {
   }
 };
 
+// =============
+
 export const addTask = async (req, res) => {
   try {
     const attachments = [];
     if (req.files && req.files.length > 0) {
       const uploadPromises = req.files.map(async (file) => {
-        const uploadResult = await uploadFileToDrive(file.buffer, file.originalname, file.mimetype, 'task');
-        
-        let type = 'file';
-        if (file.mimetype.startsWith('video/')) type = 'video';
-        if (file.mimetype.startsWith('image/')) type = 'image';
+        const uploadResult = await uploadFileToDrive(
+          file.buffer,
+          file.originalname,
+          file.mimetype,
+          "task",
+        );
 
-        return { 
-          name: file.originalname, 
-          url: uploadResult.url, 
-          type 
+        let type = "file";
+        if (file.mimetype.startsWith("video/")) type = "video";
+        if (file.mimetype.startsWith("image/")) type = "image";
+
+        return {
+          name: file.originalname,
+          url: uploadResult.url,
+          type,
         };
       });
-      
+
       const uploadedFiles = await Promise.all(uploadPromises);
       attachments.push(...uploadedFiles);
     }
@@ -137,19 +152,40 @@ export const addTask = async (req, res) => {
       phaseId: req.body.phaseId,
       subPhaseId: req.body.subPhaseId || undefined,
       assigneeId: req.body.assigneeId || undefined,
-      attachments: attachments 
+      attachments: attachments,
     };
 
     const validation = createTaskSchema.safeParse({ body: taskPayload });
     if (!validation.success) {
-      return res.status(400).json({ status: "fail", errors: validation.error.issues });
+      return res
+        .status(400)
+        .json({ status: "fail", errors: validation.error.issues });
+    }
+
+    // remove if any issue
+    const phaseExists = await prisma.projectPhase.findUnique({
+      where: { id: req.body.phaseId },
+    });
+
+    if (!phaseExists) {
+      return res
+        .status(404)
+        .json({
+          status: "fail",
+          message: "Cannot create task: The specified Phase does not exist.",
+        });
     }
 
     const task = await phaseService.createTask(validation.data.body);
 
     const projectId = req.body.projectId || task.phase?.projectId;
     if (projectId) {
-      await logActivity(projectId, req.user.id, "CREATED_TASK", `created a new task: ${task.title}`);
+      await logActivity(
+        projectId,
+        req.user.id,
+        "CREATED_TASK",
+        `created a new task: ${task.title}`,
+      );
     }
 
     return res.status(201).json({ status: "success", data: task });
@@ -165,16 +201,23 @@ export const editTask = async (req, res) => {
 
     const existingTask = await phaseService.getTaskDetails(req.params.taskId);
     if (!existingTask) {
-      return res.status(404).json({ status: "fail", message: "Task not found" });
+      return res
+        .status(404)
+        .json({ status: "fail", message: "Task not found" });
     }
 
     let newAttachments = [];
     if (req.files && req.files.length > 0) {
       const uploadPromises = req.files.map(async (file) => {
-        const uploadResult = await uploadFileToDrive(file.buffer, file.originalname, file.mimetype, 'task');
-        let type = 'file';
-        if (file.mimetype.startsWith('video/')) type = 'video';
-        if (file.mimetype.startsWith('image/')) type = 'image';
+        const uploadResult = await uploadFileToDrive(
+          file.buffer,
+          file.originalname,
+          file.mimetype,
+          "task",
+        );
+        let type = "file";
+        if (file.mimetype.startsWith("video/")) type = "video";
+        if (file.mimetype.startsWith("image/")) type = "image";
         return { name: file.originalname, url: uploadResult.url, type };
       });
       newAttachments = await Promise.all(uploadPromises);
@@ -188,7 +231,7 @@ export const editTask = async (req, res) => {
         console.error("Failed to parse retained attachments");
       }
     }
-    
+
     finalAttachments = [...finalAttachments, ...newAttachments];
 
     const taskPayload = {
@@ -199,11 +242,14 @@ export const editTask = async (req, res) => {
       startDate: req.body.startDate,
       dueDate: req.body.dueDate,
       assigneeId: req.body.assigneeId,
+      subPhaseId: req.body.subPhaseId,
       estimatedHours: req.body.estimatedHours,
       loggedHours: req.body.loggedHours,
     };
 
-    Object.keys(taskPayload).forEach(key => taskPayload[key] === undefined && delete taskPayload[key]);
+    Object.keys(taskPayload).forEach(
+      (key) => taskPayload[key] === undefined && delete taskPayload[key],
+    );
 
     if (req.files?.length > 0 || req.body.retainedAttachments) {
       taskPayload.attachments = finalAttachments;
@@ -211,7 +257,9 @@ export const editTask = async (req, res) => {
 
     const validation = updateTaskSchema.safeParse({ body: taskPayload });
     if (!validation.success) {
-      return res.status(400).json({ status: "fail", errors: validation.error.issues });
+      return res
+        .status(400)
+        .json({ status: "fail", errors: validation.error.issues });
     }
 
     const task = await phaseService.updateTask(
@@ -222,10 +270,10 @@ export const editTask = async (req, res) => {
     const projectId = req.body.projectId || task.phase?.projectId;
     if (projectId) {
       await logActivity(
-        projectId, 
-        req.user.id, 
-        "UPDATED_TASK", 
-        `updated task: ${task.title} ${req.body.status ? `to ${req.body.status}` : ''}`
+        projectId,
+        req.user.id,
+        "UPDATED_TASK",
+        `updated task: ${task.title} ${req.body.status ? `to ${req.body.status}` : ""}`,
       );
     }
 
@@ -242,19 +290,17 @@ export const deletePhase = async (req, res) => {
 
     if (deletedPhase && deletedPhase.projectId) {
       await logActivity(
-        deletedPhase.projectId, 
-        req.user.id, 
-        "DELETED_PHASE", 
-        `deleted phase: ${deletedPhase.name}`
+        deletedPhase.projectId,
+        req.user.id,
+        "DELETED_PHASE",
+        `deleted phase: ${deletedPhase.name}`,
       );
     }
 
-    return res
-      .status(200)
-      .json({
-        status: "success",
-        message: "Phase and all nested tasks deleted successfully.",
-      });
+    return res.status(200).json({
+      status: "success",
+      message: "Phase and all nested tasks deleted successfully.",
+    });
   } catch (error) {
     if (error.code === "P2025")
       return res
@@ -279,7 +325,12 @@ export const editSubPhase = async (req, res) => {
 
     const projectId = req.body.projectId || subPhase.phase?.projectId;
     if (projectId) {
-      await logActivity(projectId, req.user.id, "UPDATED_SUB_PHASE", `updated sub-phase: ${subPhase.name}`);
+      await logActivity(
+        projectId,
+        req.user.id,
+        "UPDATED_SUB_PHASE",
+        `updated sub-phase: ${subPhase.name}`,
+      );
     }
 
     return res.status(200).json({ status: "success", data: subPhase });
@@ -297,15 +348,18 @@ export const removeSubPhase = async (req, res) => {
     await phaseService.deleteSubPhase(req.params.subPhaseId);
 
     if (projectId) {
-      await logActivity(projectId, req.user.id, "DELETED_SUB_PHASE", `deleted sub-phase: ${deletedSubPhase.name}`);
+      await logActivity(
+        projectId,
+        req.user.id,
+        "DELETED_SUB_PHASE",
+        `deleted sub-phase: ${deletedSubPhase.name}`,
+      );
     }
 
-    return res
-      .status(200)
-      .json({
-        status: "success",
-        message: "Sub-phase deleted. Its tasks are now independent.",
-      });
+    return res.status(200).json({
+      status: "success",
+      message: "Sub-phase deleted. Its tasks are now independent.",
+    });
   } catch (error) {
     if (error.code === "P2025")
       return res
@@ -320,112 +374,187 @@ export const removeTask = async (req, res) => {
     const deletedTask = await phaseService.deleteTask(req.params.taskId);
 
     const projectId = req.body?.projectId || deletedTask?.phase?.projectId;
-    
+
     if (projectId) {
       logActivity(
-        projectId, 
-        req.user.id, 
-        "DELETED_TASK", 
-        `deleted a task: ${deletedTask.title || "Unknown Task"}`
-      ).catch(err => console.error("[Activity Log Warning]: Failed to log task deletion", err));
+        projectId,
+        req.user.id,
+        "DELETED_TASK",
+        `deleted a task: ${deletedTask.title || "Unknown Task"}`,
+      ).catch((err) =>
+        console.error(
+          "[Activity Log Warning]: Failed to log task deletion",
+          err,
+        ),
+      );
     }
 
-    return res.status(200).json({ 
-      status: "success", 
-      message: "Task deleted successfully." 
+    return res.status(200).json({
+      status: "success",
+      message: "Task deleted successfully.",
     });
-
   } catch (error) {
     if (error.code === "P2025") {
-      return res.status(404).json({ status: "fail", message: "Task not found." });
+      return res
+        .status(404)
+        .json({ status: "fail", message: "Task not found." });
     }
-    
+
     console.error("[Task Deletion Error]:", error);
-    return res.status(500).json({ status: "fail", message: "Internal server error during deletion." });
+    return res.status(500).json({
+      status: "fail",
+      message: "Internal server error during deletion.",
+    });
   }
 };
 
 export const postTaskUpdate = async (req, res) => {
-    try {
-        const validation = createTaskUpdateSchema.safeParse(req);
-        if (!validation.success) return res.status(400).json({ status: "fail", errors: validation.error.issues });
+  try {
+    const validation = createTaskUpdateSchema.safeParse(req);
+    if (!validation.success)
+      return res
+        .status(400)
+        .json({ status: "fail", errors: validation.error.issues });
 
-        const update = await phaseService.createTaskUpdate(req.params.taskId, req.user.id, validation.data.body);
+    const update = await phaseService.createTaskUpdate(
+      req.params.taskId,
+      req.user.id,
+      validation.data.body,
+    );
 
-        const projectId = req.body.projectId || update?.task?.phase?.projectId;
+    const projectId = req.body.projectId || update?.task?.phase?.projectId;
     if (projectId) {
-      await logActivity(projectId, req.user.id, "POSTED_UPDATE", `posted a task update`);
+      await logActivity(
+        projectId,
+        req.user.id,
+        "POSTED_UPDATE",
+        `posted a task update`,
+      );
     }
 
-        return res.status(201).json({ status: "success", data: update });
-    } catch (error) {
-        return res.status(500).json({ status: "fail", message: error.message });
-    }
+    return res.status(201).json({ status: "success", data: update });
+  } catch (error) {
+    return res.status(500).json({ status: "fail", message: error.message });
+  }
 };
 
 export const fetchTaskUpdates = async (req, res) => {
-    try {
-        const updates = await phaseService.getTaskUpdates(req.params.taskId);
-        return res.status(200).json({ status: "success", data: updates });
-    } catch (error) {
-        return res.status(500).json({ status: "fail", message: error.message });
-    }
+  try {
+    const updates = await phaseService.getTaskUpdates(req.params.taskId);
+    return res.status(200).json({ status: "success", data: updates });
+  } catch (error) {
+    return res.status(500).json({ status: "fail", message: error.message });
+  }
 };
 
 export const postTaskReply = async (req, res) => {
-    try {
-        const validation = createTaskReplySchema.safeParse(req);
-        if (!validation.success) return res.status(400).json({ status: "fail", errors: validation.error.issues });
+  try {
+    const validation = createTaskReplySchema.safeParse(req);
+    if (!validation.success)
+      return res
+        .status(400)
+        .json({ status: "fail", errors: validation.error.issues });
 
-        const reply = await phaseService.addTaskUpdateReply(req.params.updateId, req.user.id, validation.data.body.text);
+    const reply = await phaseService.addTaskUpdateReply(
+      req.params.updateId,
+      req.user.id,
+      validation.data.body.text,
+    );
 
-        const projectId = req.body.projectId || reply?.update?.task?.phase?.projectId;
+    const projectId =
+      req.body.projectId || reply?.update?.task?.phase?.projectId;
     if (projectId) {
-      await logActivity(projectId, req.user.id, "POSTED_REPLY", `replied to a task update`);
+      await logActivity(
+        projectId,
+        req.user.id,
+        "POSTED_REPLY",
+        `replied to a task update`,
+      );
     }
 
-        return res.status(201).json({ status: "success", data: reply });
-    } catch (error) {
-        return res.status(500).json({ status: "fail", message: error.message });
-    }
+    return res.status(201).json({ status: "success", data: reply });
+  } catch (error) {
+    return res.status(500).json({ status: "fail", message: error.message });
+  }
 };
 
 export const postTimeLog = async (req, res) => {
-    try {
-        const validation = createTimeLogSchema.safeParse(req);
-        if (!validation.success) return res.status(400).json({ status: "fail", errors: validation.error.issues });
+  try {
+    const validation = createTimeLogSchema.safeParse(req);
+    if (!validation.success)
+      return res
+        .status(400)
+        .json({ status: "fail", errors: validation.error.issues });
 
-        const timeLog = await phaseService.addTaskTimeLog(req.params.taskId, req.user.id, validation.data.body);
+    const timeLog = await phaseService.addTaskTimeLog(
+      req.params.taskId,
+      req.user.id,
+      validation.data.body,
+    );
 
-        const projectId = req.body.projectId || timeLog?.task?.phase?.projectId;
+    const projectId = req.body.projectId || timeLog?.task?.phase?.projectId;
     if (projectId) {
-      await logActivity(projectId, req.user.id, "LOGGED_TIME", `logged ${validation.data.body.hours} hours on a task`);
+      await logActivity(
+        projectId,
+        req.user.id,
+        "LOGGED_TIME",
+        `logged ${validation.data.body.hours} hours on a task`,
+      );
     }
 
-        return res.status(201).json({ status: "success", data: timeLog });
-    } catch (error) {
-        return res.status(500).json({ status: "fail", message: error.message });
-    }
+    return res.status(201).json({ status: "success", data: timeLog });
+  } catch (error) {
+    return res.status(500).json({ status: "fail", message: error.message });
+  }
 };
 
 export const fetchTimeLogs = async (req, res) => {
-    try {
-        const logs = await phaseService.getTaskTimeLogs(req.params.taskId);
-        return res.status(200).json({ status: "success", data: logs });
-    } catch (error) {
-        return res.status(500).json({ status: "fail", message: error.message });
-    }
+  try {
+    const logs = await phaseService.getTaskTimeLogs(req.params.taskId);
+    return res.status(200).json({ status: "success", data: logs });
+  } catch (error) {
+    return res.status(500).json({ status: "fail", message: error.message });
+  }
 };
-
 
 export const getSingleTask = async (req, res) => {
   try {
     const task = await phaseService.getTaskDetails(req.params.taskId);
-    
-    if (!task) return res.status(404).json({ status: "fail", message: "Task not found" });
-    
+
+    if (!task)
+      return res
+        .status(404)
+        .json({ status: "fail", message: "Task not found" });
+
     return res.status(200).json({ status: "success", data: task });
   } catch (error) {
+    return res.status(500).json({ status: "fail", message: error.message });
+  }
+};
+
+export const uploadEditorFile = async (req, res) => {
+  try {
+    if (!req.file) {
+      return res
+        .status(400)
+        .json({ status: "fail", message: "No file uploaded." });
+    }
+
+    const uploadResult = await uploadFileToDrive(
+      req.file.buffer,
+      req.file.originalname,
+      req.file.mimetype,
+      "editor",
+    );
+
+    return res.status(200).json({
+      success: true,
+      data: {
+        url: uploadResult.url,
+      },
+    });
+  } catch (error) {
+    console.error("[Editor Upload Error]:", error);
     return res.status(500).json({ status: "fail", message: error.message });
   }
 };

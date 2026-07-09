@@ -75,6 +75,7 @@ export const updateTaskSchema = z.object({
     startDate: z.coerce.date().optional().nullable(),
     dueDate: z.coerce.date().optional().nullable(),
     assigneeId: objectIdSchema.optional().nullable(),
+    subPhaseId: objectIdSchema.optional().nullable(),
     
     estimatedHours: z.coerce.number().int().nonnegative().optional(),
     loggedHours: z.coerce.number().int().nonnegative().optional(),

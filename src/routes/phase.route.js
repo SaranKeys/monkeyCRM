@@ -5,8 +5,15 @@ import {
   checkPermission,
 } from "../middlewares/auth.middleware.js";
 import { uploadTaskFiles } from "../middlewares/upload.middleware.js";
+import multer from "multer";
 
 const router = Router();
+
+const editorUpload = multer({ 
+    storage: multer.memoryStorage(),
+    limits: { fileSize: 10 * 1024 * 1024 } 
+});
+
 router.use(authenticate);
 
 // phase
@@ -107,6 +114,13 @@ router.get(
   "/task/:taskId/time-logs",
   checkPermission("Tasks", "viewTasks"),
   phaseController.fetchTimeLogs,
+);
+
+router.post(
+  '/editor/upload', 
+  authenticate,
+  editorUpload.single('file'), 
+  phaseController.uploadEditorFile
 );
 
 export default router;
