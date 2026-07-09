@@ -37,6 +37,7 @@ router.delete(
   checkPermission("Updates", "postUpdate"),
   updateController.removeUpdate,
 );
+
 router.post(
   "/:id/reply",
   checkPermission("Updates", "postUpdate"),
