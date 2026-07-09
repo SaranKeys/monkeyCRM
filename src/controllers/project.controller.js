@@ -91,6 +91,14 @@ export const deleteProject = async (req, res) => {
         message: "Deletion failed. Project not found.",
       });
     }
+
+    if (error.isAssigned) {
+      return res.status(409).json({
+        status: "fail",
+        message: "Cannot delete this project because team members or a Project Lead are still assigned. Please remove all personnel from the project team first."
+      });
+    }
+
     return res.status(500).json({
       status: "fail",
       message: error.message || "Internal Server Error",

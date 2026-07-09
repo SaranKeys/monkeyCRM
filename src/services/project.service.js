@@ -163,6 +163,15 @@ export const deleteProject = async (projectId) => {
     throw err;
   }
 
+  const hasMembers = project.memberIds && project.memberIds.length > 0;
+  const hasLead = project.leadId !== null;
+
+  if (hasMembers || hasLead) {
+    const err = new Error("Action blocked: Project contains active personnel.");
+    err.isAssigned = true; 
+    throw err;
+  }
+
   return await prisma.project.delete({
     where: { id: projectId },
   });
