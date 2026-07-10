@@ -21,7 +21,7 @@ router.get(
 
 router.get(
   "/:id",
-  checkPermission("Projects", "projectRunway"),
+  checkPermission("Projects", "projectRunway", true),
   runwayController.getSingleItem,
 );
 
