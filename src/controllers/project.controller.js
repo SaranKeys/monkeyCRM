@@ -216,12 +216,12 @@ export const getProjectActivity = async (req, res) => {
       include: {
         actor: {
           select: {
-            role: true,
+            role: true, 
             employeeProfile: {
               select: { legalName: true, profilePhotoUrl: true }
             },
             clientProfile: {
-              select: { companyName: true, profilePhotoUrl: true } 
+              select: { companyName: true, logoUrl: true } 
             }
           }
         }
@@ -235,7 +235,7 @@ export const getProjectActivity = async (req, res) => {
       if (log.actor) {
         if (log.actor.role === 'CLIENT' && log.actor.clientProfile) {
           actorName = log.actor.clientProfile.companyName || "Client";
-          actorPhoto = log.actor.clientProfile.profilePhotoUrl || null;
+          actorPhoto = log.actor.clientProfile.logoUrl || null; 
         } else if (log.actor.employeeProfile) {
           actorName = log.actor.employeeProfile.legalName || "Employee";
           actorPhoto = log.actor.employeeProfile.profilePhotoUrl || null;
