@@ -39,23 +39,29 @@ export const getAllProjects = async (page = 1, limit = 9, filters = {}, user) =>
   const skip = (page - 1) * limit;
   const { search, status, priority, health } = filters;
 
-  let employeeProfileId = null;
-  if (user && user.role !== "ADMIN") {
-    const profile = await prisma.employeeProfile.findUnique({
-      where: { userId: user.id }
-    });
-    if (profile) employeeProfileId = profile.id;
-  }
-
   const AND = [];
 
-  if (user && user.role !== "ADMIN" && employeeProfileId) {
-    AND.push({
-      OR: [
-        { leadId: employeeProfileId }, 
-        { memberIds: { has: employeeProfileId } } 
-      ]
-    });
+  if (user) {
+    if (user.role === "EMPLOYEE") {
+      const profile = await prisma.employeeProfile.findUnique({
+        where: { userId: user.id }
+      });
+      if (profile) {
+        AND.push({
+          OR: [
+            { leadId: profile.id }, 
+            { memberIds: { has: profile.id } } 
+          ]
+        });
+      }
+    } else if (user.role === "CLIENT") {
+      const profile = await prisma.clientProfile.findUnique({
+        where: { userId: user.id }
+      });
+      if (profile) {
+        AND.push({ clientId: profile.id });
+      }
+    }
   }
 
   if (status && status !== "All") AND.push({ status });
@@ -98,7 +104,6 @@ export const getAllProjects = async (page = 1, limit = 9, filters = {}, user) =>
   const now = new Date();
 
   const formattedProjects = projects.map((project) => {
-
     const totalTasks = project.phases.reduce((acc, phase) => acc + phase.tasks.length, 0);
     const completedTasks = project.phases.reduce((acc, phase) => {
       return acc + phase.tasks.filter(t => t.status === "DONE").length;
@@ -135,7 +140,7 @@ export const getAllProjects = async (page = 1, limit = 9, filters = {}, user) =>
 
   if (health && health !== "All health") {
     finalProjects = formattedProjects.filter((p) => p.health === health);
-    finalTotal = finalProjects.length;
+    finalTotal = finalProjects.length; 
   }
 
   return {
