@@ -49,7 +49,7 @@ router.get(
 router.get(
   "/:projectId/activity",
   authenticate,
-  checkPermission("Projects", "viewProjects"),
+  checkPermission("Projects", "viewProjects", true),
   projectController.getProjectActivity
 );
 

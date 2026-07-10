@@ -216,15 +216,45 @@ export const getProjectActivity = async (req, res) => {
       include: {
         actor: {
           select: {
+            role: true,
             employeeProfile: {
               select: { legalName: true, profilePhotoUrl: true }
+            },
+            clientProfile: {
+              select: { companyName: true, profilePhotoUrl: true } 
             }
           }
         }
       }
     });
 
-    return res.status(200).json({ status: "success", data: logs });
+    const formattedLogs = logs.map(log => {
+      let actorName = "Unknown User";
+      let actorPhoto = null;
+
+      if (log.actor) {
+        if (log.actor.role === 'CLIENT' && log.actor.clientProfile) {
+          actorName = log.actor.clientProfile.companyName || "Client";
+          actorPhoto = log.actor.clientProfile.profilePhotoUrl || null;
+        } else if (log.actor.employeeProfile) {
+          actorName = log.actor.employeeProfile.legalName || "Employee";
+          actorPhoto = log.actor.employeeProfile.profilePhotoUrl || null;
+        } else if (log.actor.role === 'ADMIN') {
+          actorName = "Super Admin";
+        }
+      }
+
+      const { actor, ...logData } = log;
+      
+      return {
+        ...logData,
+        actorName,
+        actorPhoto,
+        actorRole: log.actor?.role || "UNKNOWN"
+      };
+    });
+
+    return res.status(200).json({ status: "success", data: formattedLogs });
   } catch (error) {
     return res.status(500).json({ status: "fail", message: error.message });
   }
