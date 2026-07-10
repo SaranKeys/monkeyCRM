@@ -14,7 +14,7 @@ router.post(
 router.get(
   "/",
   authenticate,
-  checkPermission("Projects", "viewProjects"), 
+  checkPermission("Projects", "viewProjects", true), 
   projectController.getAllProjects
 );
 
