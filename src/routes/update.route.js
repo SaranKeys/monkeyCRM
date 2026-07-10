@@ -14,14 +14,14 @@ router.use(authenticate);
 // project updates tab
 router.post(
   "/create",
-  checkPermission("Updates", "postUpdate"),
+  checkPermission("Updates", "postUpdate", true),
   upload.array("files", 5),
   updateController.createProjectUpdate,
 );
 
 router.get(
   "/project/:projectId",
-  checkPermission("Updates", "viewUpdates"),
+  checkPermission("Updates", "viewUpdates", true),
   updateController.getUpdates,
 );
 
@@ -40,7 +40,7 @@ router.delete(
 
 router.post(
   "/:id/reply",
-  checkPermission("Updates", "postUpdate"),
+  checkPermission("Updates", "postUpdate", true),
   updateController.createReply,
 );
 

@@ -52,4 +52,5 @@ router.get(
   checkPermission("Projects", "viewProjects"),
   projectController.getProjectActivity
 );
+
 export default router;

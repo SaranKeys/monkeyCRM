@@ -11,7 +11,7 @@ router.use(authenticate);
 
 router.post(
   "/create",
-  checkPermission("Tickets", "createTicket"),
+  checkPermission("Tickets", "createTicket", true),
   ticketController.createTicket,
 );
 router.put(
@@ -27,20 +27,20 @@ router.delete(
 
 router.get(
   "/project/:projectId",
-  checkPermission("Tickets", "viewTickets"),
+  checkPermission("Tickets", "viewTickets", true),
   ticketController.getProjectTickets,
 );
 
 // specific ticket
 router.get(
   "/:id",
-  checkPermission("Tickets", "viewTickets"),
+  checkPermission("Tickets", "viewTickets", true),
   ticketController.getSingleTicket,
 );
 
 router.post(
   "/:id/comments",
-  checkPermission("Tickets", "reply"),
+  checkPermission("Tickets", "reply", true),
   ticketController.addCommentToTicket,
 );
 router.delete(

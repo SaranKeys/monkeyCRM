@@ -15,14 +15,16 @@ router.post(
 );
 router.get(
   "/project/:projectId",
-  checkPermission("Projects", "projectRunway"),
+  checkPermission("Projects", "projectRunway", true),
   runwayController.getRunway,
 );
+
 router.get(
   "/:id",
   checkPermission("Projects", "projectRunway"),
   runwayController.getSingleItem,
 );
+
 router.put(
   "/:id",
   checkPermission("Projects", "projectRunway"),
