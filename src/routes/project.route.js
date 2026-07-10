@@ -28,7 +28,7 @@ router.delete(
 router.get(
   "/:id",
   authenticate,
-  checkPermission("Projects", "viewProjects"),
+  checkPermission("Projects", "viewProjects", true),
   projectController.getProjectById
 );
 
@@ -42,7 +42,7 @@ router.patch(
 router.get(
   "/:projectId/team",
   authenticate,
-  checkPermission("Projects", "viewProjects"),
+  checkPermission("Projects", "viewProjects", true),
   projectController.fetchProjectTeam
 );
 
