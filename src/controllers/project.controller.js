@@ -196,6 +196,10 @@ export const getProjectActivity = async (req, res) => {
   try {
     const { projectId } = req.params;
     const { date } = req.query;  
+    
+    const page = parseInt(req.query.page, 10) || 1;
+    const limit = parseInt(req.query.limit, 10) || 20;
+    const skip = (page - 1) * limit;
 
     const whereClause = { projectId: projectId };
 
@@ -210,23 +214,28 @@ export const getProjectActivity = async (req, res) => {
       };
     }
 
-    const logs = await prisma.projectActivityLog.findMany({
-      where: whereClause,
-      orderBy: { createdAt: "desc" },  
-      include: {
-        actor: {
-          select: {
-            role: true, 
-            employeeProfile: {
-              select: { legalName: true, profilePhotoUrl: true }
-            },
-            clientProfile: {
-              select: { companyName: true, logoUrl: true } 
+    const [totalLogs, logs] = await Promise.all([
+      prisma.projectActivityLog.count({ where: whereClause }),
+      prisma.projectActivityLog.findMany({
+        where: whereClause,
+        orderBy: { createdAt: "desc" },
+        skip: skip,  
+        take: limit, 
+        include: {
+          actor: {
+            select: {
+              role: true, 
+              employeeProfile: {
+                select: { legalName: true, profilePhotoUrl: true }
+              },
+              clientProfile: {
+                select: { companyName: true, logoUrl: true } 
+              }
             }
           }
         }
-      }
-    });
+      })
+    ]);
 
     const formattedLogs = logs.map(log => {
       let actorName = "Unknown User";
@@ -254,7 +263,20 @@ export const getProjectActivity = async (req, res) => {
       };
     });
 
-    return res.status(200).json({ status: "success", data: formattedLogs });
+    const totalPages = Math.ceil(totalLogs / limit);
+
+    return res.status(200).json({ 
+      status: "success", 
+      data: formattedLogs,
+      pagination: {
+        totalRecords: totalLogs,
+        currentPage: page,
+        limit: limit,
+        totalPages: totalPages,
+        hasNextPage: page < totalPages,
+        hasPrevPage: page > 1
+      }
+    });
   } catch (error) {
     return res.status(500).json({ status: "fail", message: error.message });
   }
