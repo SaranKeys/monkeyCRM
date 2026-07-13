@@ -345,14 +345,16 @@ export const editSubPhase = async (req, res) => {
 
 export const removeSubPhase = async (req, res) => {
   try {
-    await phaseService.deleteSubPhase(req.params.subPhaseId);
+    const deletedSubPhase = await phaseService.deleteSubPhase(req.params.subPhaseId);
+
+    const projectId = deletedSubPhase.projectId || deletedSubPhase.phase?.projectId;
 
     if (projectId) {
       await logActivity(
         projectId,
         req.user.id,
         "DELETED_SUB_PHASE",
-        `deleted sub-phase: ${deletedSubPhase.name}`,
+        `deleted sub-phase: ${deletedSubPhase.name}` 
       );
     }
 
@@ -361,10 +363,9 @@ export const removeSubPhase = async (req, res) => {
       message: "Sub-phase deleted. Its tasks are now independent.",
     });
   } catch (error) {
-    if (error.code === "P2025")
-      return res
-        .status(404)
-        .json({ status: "fail", message: "Sub-phase not found" });
+    if (error.code === "P2025") {
+      return res.status(404).json({ status: "fail", message: "Sub-phase not found" });
+    }
     return res.status(500).json({ status: "fail", message: error.message });
   }
 };

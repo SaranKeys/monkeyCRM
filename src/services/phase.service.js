@@ -108,7 +108,12 @@ export const updateSubPhase = async (subPhaseId, data) => {
 
 export const deleteSubPhase = async (subPhaseId) => {
     return await prisma.phaseSubPhase.delete({
-        where: { id: subPhaseId }
+        where: { id: subPhaseId },
+        include: {
+            phase: {
+                select: { projectId: true }
+            }
+        }
     });
 };
 

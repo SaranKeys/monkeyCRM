@@ -54,6 +54,7 @@ router.patch(
   checkPermission("Projects", "managePhasesTasks"),
   phaseController.editSubPhase,
 );
+
 router.delete(
   "/sub-phase/:subPhaseId",
   checkPermission("Projects", "managePhasesTasks"),
