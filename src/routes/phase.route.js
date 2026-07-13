@@ -124,4 +124,11 @@ router.post(
   phaseController.uploadEditorFile
 );
 
+// get employee tasks
+router.get(
+    "/my-tasks",
+    authenticate, 
+    phaseController.getMyTasks
+);
+
 export default router;

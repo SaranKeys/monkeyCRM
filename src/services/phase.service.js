@@ -232,3 +232,59 @@ export const getTaskDetails = async (taskId) => {
         }
     });
 };
+
+
+export const getMyTasks = async (userId) => {
+    const profile = await prisma.employeeProfile.findUnique({
+        where: { userId: userId }
+    });
+
+    if (!profile) {
+        const error = new Error("Employee profile not found. Clients do not have assigned tasks.");
+        error.statusCode = 403;
+        throw error;
+    }
+
+    const tasks = await prisma.phaseTask.findMany({
+        where: { assigneeId: profile.id },
+        orderBy: { updatedAt: 'desc' }, 
+        include: {
+            phase: {
+                select: {
+                    name: true,
+                    project: {
+                        select: { name: true }
+                    }
+                }
+            }
+        }
+    });
+
+    const totalAssigned = tasks.length;
+    const doneTasks = tasks.filter(t => t.status === 'DONE').length;
+
+    const blockedTasks = tasks.filter(t => t.status === 'BLOCKED').length; 
+
+    const openTasks = totalAssigned - doneTasks - blockedTasks;
+
+    const formattedTasks = tasks.map(task => ({
+        id: task.id,
+        title: task.title,
+        priority: task.priority,
+        status: task.status,
+        dueDate: task.dueDate,
+        phaseName: task.phase.name,
+        projectName: task.phase.project.name,
+        projectPhaseLabel: `${task.phase.project.name} — ${task.phase.name}` 
+    }));
+
+    return {
+        metrics: {
+            total: totalAssigned,
+            open: openTasks,
+            blocked: blockedTasks,
+            done: doneTasks
+        },
+        tasks: formattedTasks
+    };
+};

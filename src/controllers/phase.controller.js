@@ -559,3 +559,28 @@ export const uploadEditorFile = async (req, res) => {
     return res.status(500).json({ status: "fail", message: error.message });
   }
 };
+
+
+
+export const getMyTasks = async (req, res) => {
+    try {
+        if (req.user.role === 'CLIENT') {
+            return res.status(403).json({ 
+                status: "fail", 
+                message: "Access denied. Only employees have task dashboards." 
+            });
+        }
+
+        const result = await phaseService.getMyTasks(req.user.id);
+
+        return res.status(200).json({
+            status: "success",
+            data: result
+        });
+    } catch (error) {
+        return res.status(error.statusCode || 500).json({ 
+            status: "fail", 
+            message: error.message 
+        });
+    }
+};
