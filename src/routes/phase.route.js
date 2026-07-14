@@ -16,7 +16,18 @@ const editorUpload = multer({
 
 router.use(authenticate);
 
-// phase
+router.get(
+    "/my-tasks",
+    phaseController.getMyTasks
+);
+
+router.post(
+  '/editor/upload', 
+  editorUpload.single('file'), 
+  phaseController.uploadEditorFile
+);
+
+// PHASE ROUTES
 router.post(
   "/create",
   checkPermission("Projects", "managePhasesTasks"),
@@ -26,11 +37,6 @@ router.get(
   "/project/:projectId",
   checkPermission("Projects", "viewProjects"),
   phaseController.getPhases,
-);
-router.get(
-  "/:id",
-  checkPermission("Projects", "viewProjects"),
-  phaseController.getSinglePhase,
 );
 router.put(
   "/:id",
@@ -43,7 +49,7 @@ router.delete(
   phaseController.deletePhase,
 );
 
-// sub phases
+// SUB PHASES ROUTES
 router.post(
   "/sub-phase/create",
   checkPermission("Projects", "managePhasesTasks"),
@@ -54,41 +60,37 @@ router.patch(
   checkPermission("Projects", "managePhasesTasks"),
   phaseController.editSubPhase,
 );
-
 router.delete(
   "/sub-phase/:subPhaseId",
   checkPermission("Projects", "managePhasesTasks"),
   phaseController.removeSubPhase,
 );
 
-// tasks
+// TASK CORE ROUTES
 router.post(
   '/task/create', 
   checkPermission("Tasks", "createTask"), 
   uploadTaskFiles, 
   phaseController.addTask
 );
-
 router.patch(
   "/task/:taskId",
   checkPermission("Tasks", "editTask"),
   uploadTaskFiles, 
   phaseController.editTask,
 );
-
 router.get(
   "/task/:taskId",
   checkPermission("Tasks", "viewTasks"),
   phaseController.getSingleTask,
 );
-
 router.delete(
   "/task/:taskId",
   checkPermission("Tasks", "editTask"),
   phaseController.removeTask,
 );
 
-// dynamic task update
+// TASK UPDATES & REPLIES
 router.post(
   "/task/:taskId/updates",
   checkPermission("Projects", "postUpdates"),
@@ -105,7 +107,7 @@ router.post(
   phaseController.postTaskReply,
 );
 
-// time logs
+// TASK TIME LOGS
 router.post(
   "/task/:taskId/time-logs",
   checkPermission("Tasks", "logTime"),
@@ -117,18 +119,11 @@ router.get(
   phaseController.fetchTimeLogs,
 );
 
-router.post(
-  '/editor/upload', 
-  authenticate,
-  editorUpload.single('file'), 
-  phaseController.uploadEditorFile
-);
-
-// get employee tasks
+// DYNAMIC PHASE PARAM ROUTE
 router.get(
-    "/my-tasks",
-    authenticate, 
-    phaseController.getMyTasks
+  "/:id",
+  checkPermission("Projects", "viewProjects"),
+  phaseController.getSinglePhase,
 );
 
 export default router;
