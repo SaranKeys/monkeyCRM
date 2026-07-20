@@ -15,6 +15,7 @@ import updateRoutes from "./routes/update.route.js"
 import phaseRoutes from "./routes/phase.route.js"
 import chatRoutes from "./routes/chat.route.js"
 import fileRoutes from "./routes/file.route.js"
+import notificationRouter from "./routes/notification.route.js"
 
 const app = express();
 
@@ -45,6 +46,7 @@ app.use('/api/updates', updateRoutes);
 app.use('/api/phases', phaseRoutes);
 app.use('/api/chat', chatRoutes);
 app.use('/api/files', fileRoutes);
+app.use('/api/notifications', notificationRouter)
 
 app.use(notFoundHandler);
 app.use(globalErrorHandler);

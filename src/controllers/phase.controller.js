@@ -13,6 +13,7 @@ import {
   createTaskUpdateSchema,
   createTimeLogSchema,
 } from "../validations/phase.validation.js";
+import * as notificationService from "../services/notification.service.js"; 
 
 export const addPhase = async (req, res) => {
   try {
@@ -162,7 +163,6 @@ export const addTask = async (req, res) => {
         .json({ status: "fail", errors: validation.error.issues });
     }
 
-    // remove if any issue
     const phaseExists = await prisma.projectPhase.findUnique({
       where: { id: req.body.phaseId },
     });
@@ -186,6 +186,22 @@ export const addTask = async (req, res) => {
         "CREATED_TASK",
         `created a new task: ${task.title}`,
       );
+    }
+
+    if (task.assigneeId) {
+      const assigneeProfile = await prisma.employeeProfile.findUnique({
+        where: { id: task.assigneeId },
+        select: { userId: true }
+      });
+
+      if (assigneeProfile) {
+        await notificationService.sendNotificationToUser(assigneeProfile.userId, {
+          title: 'New Task Assigned! 🚀',
+          body: `You have been assigned: ${task.title}`,
+          icon: '/your-logo.png', 
+          url: `/tasks/my-tasks` 
+        }).catch(err => console.error("[Notification Warning]:", err));
+      }
     }
 
     return res.status(201).json({ status: "success", data: task });
@@ -286,7 +302,7 @@ export const editTask = async (req, res) => {
 
 export const deletePhase = async (req, res) => {
   try {
-    await phaseService.deletePhase(req.params.id);
+    const deletedPhase = await phaseService.deletePhase(req.params.id);
 
     if (deletedPhase && deletedPhase.projectId) {
       await logActivity(
@@ -559,8 +575,6 @@ export const uploadEditorFile = async (req, res) => {
     return res.status(500).json({ status: "fail", message: error.message });
   }
 };
-
-
 
 export const getMyTasks = async (req, res) => {
     try {

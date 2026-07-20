@@ -153,6 +153,8 @@ model User {
   taskUpdates       TaskUpdate[]      @relation("TaskUpdateAuthor")
   taskUpdateReplies TaskUpdateReply[] @relation("TaskUpdateReplyAuthor")
 
+  pushSubscriptions PushSubscription[]
+
   timeLogs TaskTimeLog[] @relation("TimeLogAuthor")
   activityLogs ProjectActivityLog[]
 
@@ -684,4 +686,18 @@ model ProjectActivityLog {
   createdAt DateTime @default(now())
 
   @@map("project_activity_logs")
+}
+
+model PushSubscription {
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  endpoint  String
+  p256dh    String
+  auth      String
+
+  userId    String   @db.ObjectId
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+
+  @@map("push_subscriptions")
 }
