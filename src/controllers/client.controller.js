@@ -1,5 +1,6 @@
 import * as clientService from "../services/client.service.js";
 import { uploadFileToDrive } from "../services/drive.service.js";
+import { sendClientWelcomeEmail } from "../services/email.service.js";
 import {
   registerClientSchema,
   updateClientSchema,
@@ -87,6 +88,23 @@ export const registerClient = async (req, res) => {
       validatedData,
       resolvedUrls,
     );
+
+    try {
+      const frontendLink =
+        process.env.FRONTEND_URL || "https://os.pro-monkey.com/login";
+
+      await sendClientWelcomeEmail(
+        validatedData.email,
+        validatedData.contactName, 
+        validatedData.password, 
+        frontendLink,
+      );
+    } catch (emailError) {
+      console.error(
+        "Failed to send welcome email, but client was created:",
+        emailError,
+      );
+    }
 
     return res.status(201).json({
       status: "success",
