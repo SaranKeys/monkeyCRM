@@ -59,12 +59,12 @@ router.post(
 );
 router.patch(
   "/sub-phase/:subPhaseId",
-  checkPermission("Projects", "managePhasesTasks"),
+  checkPermission("Projects", "managePhasesTasks", true),
   phaseController.editSubPhase,
 );
 router.delete(
   "/sub-phase/:subPhaseId",
-  checkPermission("Projects", "managePhasesTasks"),
+  checkPermission("Projects", "managePhasesTasks", true),
   phaseController.removeSubPhase,
 );
 
