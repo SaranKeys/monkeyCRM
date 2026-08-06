@@ -35,14 +35,16 @@ router.post(
 );
 router.get(
   "/project/:projectId",
-  checkPermission("Projects", "viewProjects"),
+  checkPermission("Projects", "viewProjects", true),
   phaseController.getPhases,
 );
+
 router.put(
   "/:id",
   checkPermission("Projects", "managePhasesTasks"),
   phaseController.editPhase,
 );
+
 router.delete(
   "/:id",
   checkPermission("Projects", "managePhasesTasks"),
