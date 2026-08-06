@@ -1,290 +1,388 @@
-import prisma from '../config/prisma.js';
+import prisma from "../config/prisma.js";
+
+
+// ---------- helper ----------
+const formatAuthorDetails = (author) => {
+  let displayName = "Unknown User";
+  let displayPhoto = null;
+
+  if (author?.employeeProfile) {
+    displayName = author.employeeProfile.legalName;
+    displayPhoto = author.employeeProfile.profilePhotoUrl;
+  } else if (author?.clientProfile) {
+    displayName = `${author.clientProfile.contactName} (${author.clientProfile.companyName})`;
+    displayPhoto = author.clientProfile.logoUrl;
+  }
+
+  return { displayName, displayPhoto };
+};
+
+// --------------------------------------------------
 
 export const createPhase = async (data) => {
-    return await prisma.projectPhase.create({ data });
+  return await prisma.projectPhase.create({ data });
 };
 
 export const getProjectPhases = async (projectId) => {
-    const phases = await prisma.projectPhase.findMany({
-        where: { projectId },
-        orderBy: { startDate: 'asc' },
-        include: {
-            lead: { select: { id: true, legalName: true, profilePhotoUrl: true } },
-            tasks: { select: { id: true, status: true } }
-        }
-    });
+  const phases = await prisma.projectPhase.findMany({
+    where: { projectId },
+    orderBy: { startDate: "asc" },
+    include: {
+      lead: { select: { id: true, legalName: true, profilePhotoUrl: true } },
+      tasks: { select: { id: true, status: true } },
+    },
+  });
 
-    return phases.map(phase => {
-        const totalTasks = phase.tasks.length;
-        const doneTasks = phase.tasks.filter(t => t.status === 'DONE').length;
-        const progress = totalTasks === 0 ? 0 : Math.round((doneTasks / totalTasks) * 100);
-        
-        let calculatedStatus = phase.status;
-        if (totalTasks > 0 && doneTasks === totalTasks) calculatedStatus = 'COMPLETED';
-        else if (doneTasks > 0) calculatedStatus = 'IN_PROGRESS';
+  return phases.map((phase) => {
+    const totalTasks = phase.tasks.length;
+    const doneTasks = phase.tasks.filter((t) => t.status === "DONE").length;
+    const progress =
+      totalTasks === 0 ? 0 : Math.round((doneTasks / totalTasks) * 100);
 
-        return {
-            ...phase,
-            status: calculatedStatus,
-            taskStats: { total: totalTasks, done: doneTasks, progress }
-        };
-    });
+    let calculatedStatus = phase.status;
+    if (totalTasks > 0 && doneTasks === totalTasks)
+      calculatedStatus = "COMPLETED";
+    else if (doneTasks > 0) calculatedStatus = "IN_PROGRESS";
+
+    return {
+      ...phase,
+      status: calculatedStatus,
+      taskStats: { total: totalTasks, done: doneTasks, progress },
+    };
+  });
 };
 
 export const getPhaseDetails = async (phaseId) => {
-    const phase = await prisma.projectPhase.findUnique({
-        where: { id: phaseId },
+  const phase = await prisma.projectPhase.findUnique({
+    where: { id: phaseId },
+    include: {
+      lead: { select: { id: true, legalName: true, profilePhotoUrl: true } },
+      subPhases: {
         include: {
-            lead: { select: { id: true, legalName: true, profilePhotoUrl: true } },
-            subPhases: {
-                include: {
-                    tasks: { include: { assignee: { select: { id: true, legalName: true } } } }
-                }
-            },
-            tasks: {
-                where: { OR: [{ subPhaseId: null }, { subPhaseId: { isSet: false } }] },
-                include: { assignee: { select: { id: true, legalName: true } } }
-            }
-        }
-    });
+          tasks: {
+            include: { assignee: { select: { id: true, legalName: true } } },
+          },
+        },
+      },
+      tasks: {
+        where: { OR: [{ subPhaseId: null }, { subPhaseId: { isSet: false } }] },
+        include: { assignee: { select: { id: true, legalName: true } } },
+      },
+    },
+  });
 
-    if (!phase) return null;
+  if (!phase) return null;
 
-    let totalTasks = phase.tasks.length;
-    let doneTasks = phase.tasks.filter(t => t.status === 'DONE').length;
+  let totalTasks = phase.tasks.length;
+  let doneTasks = phase.tasks.filter((t) => t.status === "DONE").length;
 
-    phase.subPhases.forEach(subPhase => {
-        totalTasks += subPhase.tasks.length;
-        doneTasks += subPhase.tasks.filter(t => t.status === 'DONE').length;
-    });
+  phase.subPhases.forEach((subPhase) => {
+    totalTasks += subPhase.tasks.length;
+    doneTasks += subPhase.tasks.filter((t) => t.status === "DONE").length;
+  });
 
-    const progress = totalTasks === 0 ? 0 : Math.round((doneTasks / totalTasks) * 100);
+  const progress =
+    totalTasks === 0 ? 0 : Math.round((doneTasks / totalTasks) * 100);
 
-    return {
-        ...phase,
-        taskStats: {
-            total: totalTasks,
-            done: doneTasks,
-            progress: progress
-        }
-    };
+  return {
+    ...phase,
+    taskStats: {
+      total: totalTasks,
+      done: doneTasks,
+      progress: progress,
+    },
+  };
 };
 
 export const updatePhase = async (phaseId, data) => {
-    return await prisma.projectPhase.update({ where: { id: phaseId }, data });
+  return await prisma.projectPhase.update({ where: { id: phaseId }, data });
 };
 
 export const createSubPhase = async (data) => {
-    return await prisma.phaseSubPhase.create({ data });
+  return await prisma.phaseSubPhase.create({ data });
 };
 
 export const createTask = async (data) => {
-    return await prisma.phaseTask.create({ 
-        data, 
-        include: { assignee: { select: { id: true, legalName: true } } } 
-    });
+  return await prisma.phaseTask.create({
+    data,
+    include: { assignee: { select: { id: true, legalName: true } } },
+  });
 };
 
 export const updateTask = async (taskId, data) => {
-    return await prisma.phaseTask.update({
-        where: { id: taskId },
-        data, 
-        include: { assignee: { select: { id: true, legalName: true } } }
-    });
+  return await prisma.phaseTask.update({
+    where: { id: taskId },
+    data,
+    include: { assignee: { select: { id: true, legalName: true } } },
+  });
 };
 
 export const deletePhase = async (phaseId) => {
-    return await prisma.projectPhase.delete({
-        where: { id: phaseId }
-    });
+  return await prisma.projectPhase.delete({
+    where: { id: phaseId },
+  });
 };
 
 export const updateSubPhase = async (subPhaseId, data) => {
-    return await prisma.phaseSubPhase.update({
-        where: { id: subPhaseId },
-        data
-    });
+  return await prisma.phaseSubPhase.update({
+    where: { id: subPhaseId },
+    data,
+  });
 };
 
 export const deleteSubPhase = async (subPhaseId) => {
-    return await prisma.phaseSubPhase.delete({
-        where: { id: subPhaseId },
-        include: {
-            phase: {
-                select: { projectId: true }
-            }
-        }
-    });
+  return await prisma.phaseSubPhase.delete({
+    where: { id: subPhaseId },
+    include: {
+      phase: {
+        select: { projectId: true },
+      },
+    },
+  });
 };
 
 export const deleteTask = async (taskId) => {
-    return await prisma.phaseTask.delete({
-        where: { id: taskId },
-        include: {
-            phase: {
-                select: { projectId: true }
-            }
-        }
-    });
+  return await prisma.phaseTask.delete({
+    where: { id: taskId },
+    include: {
+      phase: {
+        select: { projectId: true },
+      },
+    },
+  });
 };
 
-
 export const createTaskUpdate = async (taskId, authorId, data) => {
-    return await prisma.taskUpdate.create({
-        data: {
-            content: data.content,
-            type: data.type,
-            taskId,
-            authorId
+  return await prisma.taskUpdate.create({
+    data: {
+      content: data.content,
+      type: data.type,
+      taskId,
+      authorId,
+    },
+   include: {
+      author: {
+        select: {
+          employeeProfile: { select: { legalName: true, profilePhotoUrl: true } },
+          clientProfile: { select: { contactName: true, companyName: true, logoUrl: true } }, 
         },
-        include: {
-            author: { select: { employeeProfile: { select: { legalName: true, profilePhotoUrl: true } } } }
-        }
-    });
+      },
+    },
+  });
+
+  return { ...update, ...formatAuthorDetails(update.author) };
 };
 
 export const getTaskUpdates = async (taskId) => {
-    return await prisma.taskUpdate.findMany({
-        where: { taskId },
-        orderBy: { createdAt: 'desc' },  
+  return await prisma.taskUpdate.findMany({
+    where: { taskId },
+    orderBy: { createdAt: "desc" },
+    include: {
+      author: {
+        select: {
+          employeeProfile: {
+            select: { legalName: true, profilePhotoUrl: true },
+          },
+        },
+      },
+      replies: {
+        orderBy: { createdAt: "asc" },
         include: {
-            author: { select: { employeeProfile: { select: { legalName: true, profilePhotoUrl: true } } } },
-            replies: {
-                orderBy: { createdAt: 'asc' }, // Oldest replies first (chronological)
-                include: {
-                    author: { select: { employeeProfile: { select: { legalName: true, profilePhotoUrl: true } } } }
-                }
-            }
-        }
-    });
-};
-
-export const addTaskUpdateReply = async (updateId, authorId, text) => {
-    return await prisma.taskUpdateReply.create({
-        data: { text, updateId, authorId },
-        include: {
-            author: { select: { employeeProfile: { select: { legalName: true, profilePhotoUrl: true } } } }
-        }
-    });
-};
-
-export const addTaskTimeLog = async (taskId, authorId, data) => {
-    return await prisma.$transaction(async (tx) => {
-        const log = await tx.taskTimeLog.create({
-            data: {
-                hours: data.hours,
-                date: new Date(data.date),
-                note: data.note,
-                taskId,
-                authorId
+        author: {
+            select: {
+              employeeProfile: { select: { legalName: true, profilePhotoUrl: true } },
+              clientProfile: { select: { contactName: true, companyName: true, logoUrl: true } }, 
             },
-            include: {
-                author: { select: { employeeProfile: { select: { legalName: true } } } }
-            }
-        });
+          },
+        },
+      },
+    },
+  });
 
-        const currentTask = await tx.phaseTask.findUnique({ 
-            where: { id: taskId } 
-        });
-
-        const currentLoggedHours = currentTask.loggedHours || 0;
-
-        await tx.phaseTask.update({
-            where: { id: taskId },
-            data: {
-                loggedHours: currentLoggedHours + data.hours
-            }
-        });
-
-        return log;
-    });
-};
-
-export const getTaskTimeLogs = async (taskId) => {
-    return await prisma.taskTimeLog.findMany({
-        where: { taskId },
-        orderBy: { date: 'desc' },  
-        include: {
-            author: { select: { employeeProfile: { select: { legalName: true } } } }
-        }
-    });
-};
-
-
-export const getTaskDetails = async (taskId) => {
-    return await prisma.phaseTask.findUnique({
-        where: { id: taskId },
-        include: {
-            assignee: {
-                select: {
-                    legalName: true,
-                    profilePhotoUrl: true
-                }
-            },
-            phase: {
-                select: {
-                    name: true,
-                    project: {
-                        select: { name: true }
-                    }
-                }
-            }
-        }
-    });
-};
-
-
-export const getMyTasks = async (userId) => {
-    const profile = await prisma.employeeProfile.findUnique({
-        where: { userId: userId }
-    });
-
-    if (!profile) {
-        const error = new Error("Employee profile not found. Clients do not have assigned tasks.");
-        error.statusCode = 403;
-        throw error;
-    }
-
-    const tasks = await prisma.phaseTask.findMany({
-        where: { assigneeId: profile.id },
-        orderBy: { updatedAt: 'desc' }, 
-        include: {
-            phase: {
-                select: {
-                    name: true,
-                    project: {
-                        select: { name: true }
-                    }
-                }
-            }
-        }
-    });
-
-    const totalAssigned = tasks.length;
-    const doneTasks = tasks.filter(t => t.status === 'DONE').length;
-
-    const blockedTasks = tasks.filter(t => t.status === 'BLOCKED').length; 
-
-    const openTasks = totalAssigned - doneTasks - blockedTasks;
-
-    const formattedTasks = tasks.map(task => ({
-        id: task.id,
-        title: task.title,
-        priority: task.priority,
-        status: task.status,
-        dueDate: task.dueDate,
-        phaseName: task.phase.name,
-        projectName: task.phase.project.name,
-        projectPhaseLabel: `${task.phase.project.name} — ${task.phase.name}` 
+  return updates.map((update) => {
+    const formattedReplies = update.replies.map((reply) => ({
+      ...reply,
+      ...formatAuthorDetails(reply.author)
     }));
 
     return {
-        metrics: {
-            total: totalAssigned,
-            open: openTasks,
-            blocked: blockedTasks,
-            done: doneTasks
-        },
-        tasks: formattedTasks
+      ...update,
+      ...formatAuthorDetails(update.author),
+      replies: formattedReplies
     };
+  });
+};
+
+export const addTaskUpdateReply = async (updateId, authorId, text) => {
+  const reply = await prisma.taskUpdateReply.create({
+    data: { text, updateId, authorId },
+    include: {
+      author: {
+        select: {
+          employeeProfile: { select: { legalName: true, profilePhotoUrl: true } },
+          clientProfile: { select: { contactName: true, companyName: true, logoUrl: true } }, 
+        },
+      },
+    },
+  });
+
+  return { ...reply, ...formatAuthorDetails(reply.author) };
+};
+
+export const addTaskTimeLog = async (taskId, authorId, data) => {
+  return await prisma.$transaction(async (tx) => {
+    const log = await tx.taskTimeLog.create({
+      data: {
+        hours: data.hours,
+        date: new Date(data.date),
+        note: data.note,
+        taskId,
+        authorId,
+      },
+      include: {
+        author: {
+          select: {
+            employeeProfile: { select: { legalName: true } },
+            clientProfile: { select: { contactName: true, companyName: true } },
+          },
+        },
+      },
+    });
+
+    const currentTask = await tx.phaseTask.findUnique({
+      where: { id: taskId },
+    });
+
+    const currentLoggedHours = currentTask.loggedHours || 0;
+
+    await tx.phaseTask.update({
+      where: { id: taskId },
+      data: {
+        loggedHours: currentLoggedHours + data.hours,
+      },
+    });
+
+    let displayName = "Unknown User";
+
+    if (log.author?.employeeProfile) {
+      displayName = log.author.employeeProfile.legalName;
+    } else if (log.author?.clientProfile) {
+      displayName = `${log.author.clientProfile.contactName} (${log.author.clientProfile.companyName})`;
+    }
+
+    return {
+      ...log,
+      displayName,
+    };
+  });
+};
+
+export const getTaskTimeLogs = async (taskId) => {
+  const logs = await prisma.taskTimeLog.findMany({
+    where: { taskId },
+    orderBy: { date: "desc" },
+    include: {
+      author: { 
+        select: { 
+          employeeProfile: { select: { legalName: true } },
+          clientProfile: { select: { contactName: true, companyName: true } }
+        } 
+      },
+    },
+  });
+
+  // 2. Map through the array and inject the safe displayName for the frontend
+  return logs.map(log => {
+    let displayName = "Unknown User";
+
+    if (log.author?.employeeProfile) {
+      displayName = log.author.employeeProfile.legalName;
+    } else if (log.author?.clientProfile) {
+      displayName = `${log.author.clientProfile.contactName} (${log.author.clientProfile.companyName})`;
+    }
+
+    return {
+      ...log,
+      displayName
+    };
+  });
+};
+
+export const getTaskDetails = async (taskId) => {
+  return await prisma.phaseTask.findUnique({
+    where: { id: taskId },
+    include: {
+      assignee: {
+        select: {
+          legalName: true,
+          profilePhotoUrl: true,
+        },
+      },
+      phase: {
+        select: {
+          name: true,
+          project: {
+            select: { name: true },
+          },
+        },
+      },
+    },
+  });
+};
+
+export const getMyTasks = async (userId) => {
+  const profile = await prisma.employeeProfile.findUnique({
+    where: { userId: userId },
+  });
+
+  if (!profile) {
+    const error = new Error(
+      "Employee profile not found. Clients do not have assigned tasks.",
+    );
+    error.statusCode = 403;
+    throw error;
+  }
+
+  const tasks = await prisma.phaseTask.findMany({
+    where: { assigneeId: profile.id },
+    orderBy: { updatedAt: "desc" },
+    include: {
+      phase: {
+        select: {
+          name: true,
+          project: {
+            select: { name: true },
+          },
+        },
+      },
+    },
+  });
+
+  const totalAssigned = tasks.length;
+  const doneTasks = tasks.filter((t) => t.status === "DONE").length;
+
+  const blockedTasks = tasks.filter((t) => t.status === "BLOCKED").length;
+
+  const openTasks = totalAssigned - doneTasks - blockedTasks;
+
+  const formattedTasks = tasks.map((task) => ({
+    id: task.id,
+    title: task.title,
+    priority: task.priority,
+    status: task.status,
+    dueDate: task.dueDate,
+    phaseName: task.phase.name,
+    projectName: task.phase.project.name,
+    projectPhaseLabel: `${task.phase.project.name} — ${task.phase.name}`,
+  }));
+
+  return {
+    metrics: {
+      total: totalAssigned,
+      open: openTasks,
+      blocked: blockedTasks,
+      done: doneTasks,
+    },
+    tasks: formattedTasks,
+  };
 };

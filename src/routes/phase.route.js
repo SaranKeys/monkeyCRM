@@ -52,7 +52,7 @@ router.delete(
 // SUB PHASES ROUTES
 router.post(
   "/sub-phase/create",
-  checkPermission("Projects", "managePhasesTasks"),
+  checkPermission("Projects", "managePhasesTasks", true),
   phaseController.addSubPhase,
 );
 router.patch(
@@ -69,53 +69,55 @@ router.delete(
 // TASK CORE ROUTES
 router.post(
   '/task/create', 
-  checkPermission("Tasks", "createTask"), 
+  checkPermission("Tasks", "createTask", true), 
   uploadTaskFiles, 
   phaseController.addTask
 );
 router.patch(
   "/task/:taskId",
-  checkPermission("Tasks", "editTask"),
+  checkPermission("Tasks", "editTask", true),
   uploadTaskFiles, 
   phaseController.editTask,
 );
+
 router.get(
   "/task/:taskId",
   checkPermission("Tasks", "viewTasks"),
   phaseController.getSingleTask,
 );
+
 router.delete(
   "/task/:taskId",
-  checkPermission("Tasks", "editTask"),
+  checkPermission("Tasks", "deleteTask", true),
   phaseController.removeTask,
 );
 
 // TASK UPDATES & REPLIES
 router.post(
   "/task/:taskId/updates",
-  checkPermission("Projects", "postUpdates"),
+  checkPermission("Projects", "postUpdates", true),
   phaseController.postTaskUpdate,
 );
 router.get(
   "/task/:taskId/updates",
-  checkPermission("Tasks", "viewTasks"),
+  checkPermission("Tasks", "viewTasks", true),
   phaseController.fetchTaskUpdates,
 );
 router.post(
   "/task/updates/:updateId/reply",
-  checkPermission("Projects", "postUpdates"),
+  checkPermission("Projects", "postUpdates", true),
   phaseController.postTaskReply,
 );
 
 // TASK TIME LOGS
 router.post(
   "/task/:taskId/time-logs",
-  checkPermission("Tasks", "logTime"),
+  checkPermission("Tasks", "logTime", true),
   phaseController.postTimeLog,
 );
 router.get(
   "/task/:taskId/time-logs",
-  checkPermission("Tasks", "viewTasks"),
+  checkPermission("Tasks", "viewTasks", true),
   phaseController.fetchTimeLogs,
 );
 

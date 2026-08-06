@@ -66,12 +66,34 @@ export const getProjectFiles = async (req, res) => {
             employeeProfile: {
               select: { legalName: true, profilePhotoUrl: true },
             },
+            clientProfile: {
+              select: { contactName: true, companyName: true, logoUrl: true }
+            }
           },
         },
       },
     });
 
-    return res.status(200).json({ status: "success", data: files });
+    const formattedFiles = files.map(file => {
+      let displayName = "Unknown User";
+      let displayPhoto = null;
+
+      if (file.uploader?.employeeProfile) {
+        displayName = file.uploader.employeeProfile.legalName;
+        displayPhoto = file.uploader.employeeProfile.profilePhotoUrl;
+      } else if (file.uploader?.clientProfile) {
+        displayName = `${file.uploader.clientProfile.contactName} (${file.uploader.clientProfile.companyName})`;
+        displayPhoto = file.uploader.clientProfile.logoUrl;
+      }
+
+      return {
+        ...file,
+        displayName,
+        displayPhoto
+      };
+    });
+
+    return res.status(200).json({ status: "success", data: formattedFiles });
   } catch (error) {
     return res.status(500).json({ status: "fail", message: error.message });
   }
