@@ -1,23 +1,23 @@
-import nodemailer from 'nodemailer';
+import nodemailer from "nodemailer";
 
 const transporter = nodemailer.createTransport({
-    host: process.env.SMTP_HOST || 'smtp.gmail.com', 
-    port: process.env.SMTP_PORT || 587,
-    secure: false,
-    auth: {
-        user: process.env.SMTP_USER || "dev.promonkey@gmail.com" , 
-        pass: process.env.SMTP_PASS || "izevbpblgoerbqym"
-    },
-    logger: true, 
-    debug: true
+  host: process.env.SMTP_HOST || "smtp.gmail.com",
+  port: process.env.SMTP_PORT || 587,
+  secure: false,
+  auth: {
+    user: process.env.SMTP_USER || "dev.promonkey@gmail.com",
+    pass: process.env.SMTP_PASS || "izevbpblgoerbqym",
+  },
+  logger: true,
+  debug: true,
 });
 
 export const sendPasswordResetOTP = async (toEmail, otp) => {
-    const mailOptions = {
-        from: `"Monkey CRM Support" <${process.env.SMTP_USER}>`,
-        to: toEmail,
-        subject: 'Your Password Reset OTP',
-        html: `
+  const mailOptions = {
+    from: `"Monkey CRM Support" <${process.env.SMTP_USER}>`,
+    to: toEmail,
+    subject: "Your Password Reset OTP",
+    html: `
             <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
                 <h2>Password Reset Request</h2>
                 <p>We received a request to reset your password. Here is your One-Time Password (OTP):</p>
@@ -25,26 +25,29 @@ export const sendPasswordResetOTP = async (toEmail, otp) => {
                 <p>This OTP is valid for <strong>15 minutes</strong>. Do not share this code with anyone.</p>
                 <p>If you did not request this reset, you can safely ignore this email.</p>
             </div>
-        `
-    };
+        `,
+  };
 
-    try {
-        await transporter.sendMail(mailOptions);
-        return true;
-    } catch (error) {
-        console.error('[Nodemailer Error]:', error);
-        throw new Error('Failed to send OTP email. Please try again later.');
-    }
+  try {
+    await transporter.sendMail(mailOptions);
+    return true;
+  } catch (error) {
+    console.error("[Nodemailer Error]:", error);
+    throw new Error("Failed to send OTP email. Please try again later.");
+  }
 };
 
-
-
-export const sendClientWelcomeEmail = async (toEmail, clientName, rawPassword, loginUrl) => {
-    const mailOptions = {
-        from: `"proMonkey CRM" <${process.env.SMTP_USER || "dev.promonkey@gmail.com"}>`,
-        to: toEmail,
-        subject: 'Welcome to proMonkey CRM - Your Account is Ready',
-        html: `
+export const sendClientWelcomeEmail = async (
+  toEmail,
+  clientName,
+  rawPassword,
+  loginUrl,
+) => {
+  const mailOptions = {
+    from: `"proMonkey CRM" <${process.env.SMTP_USER || "dev.promonkey@gmail.com"}>`,
+    to: toEmail,
+    subject: "Welcome to proMonkey CRM - Your Account is Ready",
+    html: `
             <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; color: #333;">
                 <h2 style="color: #2563eb;">Welcome to proMonkey CRM, ${clientName}!</h2>
                 <p>Your client portal account has been successfully created by our administration team.</p>
@@ -61,27 +64,29 @@ export const sendClientWelcomeEmail = async (toEmail, clientName, rawPassword, l
                 <br/>
                 <p>Best Regards,<br/><strong>The proMonkey Team</strong></p>
             </div>
-        `
-    };
+        `,
+  };
 
-    try {
-        console.log(`[Email Service] Attempting to send welcome email to: ${toEmail}...`);
-        
-        const info = await transporter.sendMail(mailOptions);
-        
-        console.log('----------------------------------------------------');
-        console.log(`[Email Service] SUCCESS! Email sent successfully.`);
-        console.log(`[Email Service] Message ID: ${info.messageId}`);
-        console.log(`[Email Service] Accepted by Google:`, info.accepted);
-        console.log(`[Email Service] Rejected by Google:`, info.rejected);
-        console.log('----------------------------------------------------');
-        
-        return true;
-    } catch (error) {
-        console.error('----------------------------------------------------');
-        console.error('[Nodemailer Error - Welcome Email]:', error.message);
-        console.error('Full Error Stack:', error);
-        console.error('----------------------------------------------------');
-        return false; 
-    }
+  try {
+    console.log(
+      `[Email Service] Attempting to send welcome email to: ${toEmail}...`,
+    );
+
+    const info = await transporter.sendMail(mailOptions);
+
+    console.log("----------------------------------------------------");
+    console.log(`[Email Service] SUCCESS! Email sent successfully.`);
+    console.log(`[Email Service] Message ID: ${info.messageId}`);
+    console.log(`[Email Service] Accepted by Google:`, info.accepted);
+    console.log(`[Email Service] Rejected by Google:`, info.rejected);
+    console.log("----------------------------------------------------");
+
+    return true;
+  } catch (error) {
+    console.error("----------------------------------------------------");
+    console.error("[Nodemailer Error - Welcome Email]:", error.message);
+    console.error("Full Error Stack:", error);
+    console.error("----------------------------------------------------");
+    return false;
+  }
 };

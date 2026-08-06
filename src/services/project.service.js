@@ -292,10 +292,13 @@ export const getProjectGlanceStats = async (projectId, user) => {
   if (!project) throw new Error("Project not found");
 
   const [tasks, openTicketsCount, updatesCount] = await Promise.all([
-
+    
     prisma.phaseTask.findMany({
       where: {
-        phase: { projectId: projectId }
+        phase: { 
+          projectId: projectId,
+          ...(isClient ? { showToClient: true } : {}) 
+        }
       },
       select: {
         status: true,

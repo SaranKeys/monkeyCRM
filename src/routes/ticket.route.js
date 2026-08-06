@@ -16,12 +16,12 @@ router.post(
 );
 router.put(
   "/:id",
-  checkPermission("Tickets", "changeStatus"),
+  checkPermission("Tickets", "changeStatus", true),
   ticketController.updateTicket,
 );
 router.delete(
   "/:id",
-  checkPermission("Tickets", "createTicket"),
+  checkPermission("Tickets", "createTicket", true),
   ticketController.deleteTicket,
 );
 

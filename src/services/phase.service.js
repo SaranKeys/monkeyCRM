@@ -44,15 +44,23 @@ export const getProjectPhases = async (projectId, user) => {
     orderBy: { startDate: "asc" },
     include: {
       lead: { select: { id: true, legalName: true, profilePhotoUrl: true } },
-      tasks: { select: { id: true, status: true } },
+      
+      tasks: { select: { id: true, status: true, estimatedHours: true, loggedHours: true } },
     },
   });
 
   return phases.map((phase) => {
     const totalTasks = phase.tasks.length;
     const doneTasks = phase.tasks.filter((t) => t.status === "DONE").length;
-    const progress =
-      totalTasks === 0 ? 0 : Math.round((doneTasks / totalTasks) * 100);
+    const progress = totalTasks === 0 ? 0 : Math.round((doneTasks / totalTasks) * 100);
+
+    let phaseAllotedTime = 0;
+    let phaseConsumedTime = 0;
+
+    phase.tasks.forEach((t) => {
+      phaseAllotedTime += (t.estimatedHours || 0); 
+      phaseConsumedTime += (t.loggedHours || 0);   
+    });
 
     let calculatedStatus = phase.status;
     if (totalTasks > 0 && doneTasks === totalTasks)
@@ -62,7 +70,13 @@ export const getProjectPhases = async (projectId, user) => {
     return {
       ...phase,
       status: calculatedStatus,
-      taskStats: { total: totalTasks, done: doneTasks, progress },
+      taskStats: { 
+        total: totalTasks, 
+        done: doneTasks, 
+        progress,
+        allotedTime: phaseAllotedTime,     
+        consumedTime: phaseConsumedTime    
+      },
     };
   });
 };
@@ -113,13 +127,20 @@ export const getPhaseDetails = async (phaseId) => {
   };
 };
 
+
+
 export const updatePhase = async (phaseId, data) => {
   return await prisma.projectPhase.update({ where: { id: phaseId }, data });
 };
 
+
+
+
 export const createSubPhase = async (data) => {
   return await prisma.phaseSubPhase.create({ data });
 };
+
+
 
 export const createTask = async (data) => {
   return await prisma.phaseTask.create({
@@ -127,6 +148,11 @@ export const createTask = async (data) => {
     include: { assignee: { select: { id: true, legalName: true } } },
   });
 };
+
+
+
+
+
 
 export const updateTask = async (taskId, data) => {
   return await prisma.phaseTask.update({

@@ -26,6 +26,7 @@ export const updatePhaseSchema = z.object({
 
     startDate: z.string().datetime().optional(),
     dueDate: z.string().datetime().optional(),
+    clientView: z.boolean().optional(), 
 
     priority: z.enum(["LOW", "MEDIUM", "HIGH", "URGENT"]).optional(),
 
@@ -55,6 +56,8 @@ export const createTaskSchema = z.object({
     phaseId: objectIdSchema,
     subPhaseId: objectIdSchema.optional().nullable(),
     assigneeId: objectIdSchema.optional().nullable(),
+
+    estimatedHours: z.number().optional().nullable(),
 
     description: z.string().optional().nullable(),
     attachments: z.array(

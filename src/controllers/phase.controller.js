@@ -13,10 +13,7 @@ import {
   createTaskUpdateSchema,
   createTimeLogSchema,
 } from "../validations/phase.validation.js";
-import * as notificationService from "../services/notification.service.js"; 
-
-
-
+import * as notificationService from "../services/notification.service.js";
 
 export const addPhase = async (req, res) => {
   try {
@@ -43,17 +40,16 @@ export const addPhase = async (req, res) => {
 
 export const getPhases = async (req, res) => {
   try {
-    const phases = await phaseService.getProjectPhases(req.params.projectId, req.user);
+    const phases = await phaseService.getProjectPhases(
+      req.params.projectId,
+      req.user,
+    );
 
     return res.status(200).json({ status: "success", data: phases });
   } catch (error) {
     return res.status(500).json({ status: "fail", message: error.message });
   }
 };
-
-
-
-
 
 export const getSinglePhase = async (req, res) => {
   try {
@@ -76,10 +72,14 @@ export const editPhase = async (req, res) => {
         .status(400)
         .json({ status: "fail", errors: validation.error.issues });
 
-    const phase = await phaseService.updatePhase(
-      req.params.id,
-      validation.data.body,
-    );
+    const updatePayload = { ...validation.data.body };
+
+    if (updatePayload.clientView !== undefined) {
+      updatePayload.showToClient = updatePayload.clientView;
+      delete updatePayload.clientView;
+    }
+
+    const phase = await phaseService.updatePhase(req.params.id, updatePayload);
 
     await logActivity(
       phase.projectId || req.body.projectId,
@@ -161,6 +161,9 @@ export const addTask = async (req, res) => {
       phaseId: req.body.phaseId,
       subPhaseId: req.body.subPhaseId || undefined,
       assigneeId: req.body.assigneeId || undefined,
+
+      estimatedHours: req.body.allotedTime ? Number(req.body.allotedTime) : undefined,
+      
       attachments: attachments,
     };
 
@@ -176,12 +179,10 @@ export const addTask = async (req, res) => {
     });
 
     if (!phaseExists) {
-      return res
-        .status(404)
-        .json({
-          status: "fail",
-          message: "Cannot create task: The specified Phase does not exist.",
-        });
+      return res.status(404).json({
+        status: "fail",
+        message: "Cannot create task: The specified Phase does not exist.",
+      });
     }
 
     const task = await phaseService.createTask(validation.data.body);
@@ -199,16 +200,18 @@ export const addTask = async (req, res) => {
     if (task.assigneeId) {
       const assigneeProfile = await prisma.employeeProfile.findUnique({
         where: { id: task.assigneeId },
-        select: { userId: true }
+        select: { userId: true },
       });
 
       if (assigneeProfile) {
-        await notificationService.sendNotificationToUser(assigneeProfile.userId, {
-          title: 'New Task Assigned! 🚀',
-          body: `You have been assigned: ${task.title}`,
-          icon: '/your-logo.png', 
-          url: `/tasks/my-tasks` 
-        }).catch(err => console.error("[Notification Warning]:", err));
+        await notificationService
+          .sendNotificationToUser(assigneeProfile.userId, {
+            title: "New Task Assigned! 🚀",
+            body: `You have been assigned: ${task.title}`,
+            icon: "/your-logo.png",
+            url: `/tasks/my-tasks`,
+          })
+          .catch((err) => console.error("[Notification Warning]:", err));
       }
     }
 
@@ -369,16 +372,19 @@ export const editSubPhase = async (req, res) => {
 
 export const removeSubPhase = async (req, res) => {
   try {
-    const deletedSubPhase = await phaseService.deleteSubPhase(req.params.subPhaseId);
+    const deletedSubPhase = await phaseService.deleteSubPhase(
+      req.params.subPhaseId,
+    );
 
-    const projectId = deletedSubPhase.projectId || deletedSubPhase.phase?.projectId;
+    const projectId =
+      deletedSubPhase.projectId || deletedSubPhase.phase?.projectId;
 
     if (projectId) {
       await logActivity(
         projectId,
         req.user.id,
         "DELETED_SUB_PHASE",
-        `deleted sub-phase: ${deletedSubPhase.name}` 
+        `deleted sub-phase: ${deletedSubPhase.name}`,
       );
     }
 
@@ -388,7 +394,9 @@ export const removeSubPhase = async (req, res) => {
     });
   } catch (error) {
     if (error.code === "P2025") {
-      return res.status(404).json({ status: "fail", message: "Sub-phase not found" });
+      return res
+        .status(404)
+        .json({ status: "fail", message: "Sub-phase not found" });
     }
     return res.status(500).json({ status: "fail", message: error.message });
   }
@@ -463,16 +471,13 @@ export const postTaskUpdate = async (req, res) => {
   }
 };
 
-
 export const fetchTaskUpdates = async (req, res) => {
-
   try {
     const updates = await phaseService.getTaskUpdates(req.params.taskId);
     return res.status(200).json({ status: "success", data: updates });
   } catch (error) {
     return res.status(500).json({ status: "fail", message: error.message });
   }
-
 };
 
 export const postTaskReply = async (req, res) => {
@@ -588,24 +593,24 @@ export const uploadEditorFile = async (req, res) => {
 };
 
 export const getMyTasks = async (req, res) => {
-    try {
-        if (req.user.role === 'CLIENT') {
-            return res.status(403).json({ 
-                status: "fail", 
-                message: "Access denied. Only employees have task dashboards." 
-            });
-        }
-
-        const result = await phaseService.getMyTasks(req.user.id);
-
-        return res.status(200).json({
-            status: "success",
-            data: result
-        });
-    } catch (error) {
-        return res.status(error.statusCode || 500).json({ 
-            status: "fail", 
-            message: error.message 
-        });
+  try {
+    if (req.user.role === "CLIENT") {
+      return res.status(403).json({
+        status: "fail",
+        message: "Access denied. Only employees have task dashboards.",
+      });
     }
+
+    const result = await phaseService.getMyTasks(req.user.id);
+
+    return res.status(200).json({
+      status: "success",
+      data: result,
+    });
+  } catch (error) {
+    return res.status(error.statusCode || 500).json({
+      status: "fail",
+      message: error.message,
+    });
+  }
 };
