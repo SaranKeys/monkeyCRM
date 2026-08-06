@@ -20,12 +20,27 @@ const formatAuthorDetails = (author) => {
 // --------------------------------------------------
 
 export const createPhase = async (data) => {
-  return await prisma.projectPhase.create({ data });
+  const { clientView, ...restData } = data;
+
+  const phaseData = {
+    ...restData,
+    showToClient: clientView === true ? true : false,
+  };
+
+  return await prisma.projectPhase.create({ data: phaseData });
 };
 
-export const getProjectPhases = async (projectId) => {
+export const getProjectPhases = async (projectId, user) => {
+  const isClient = user.role === "CLIENT"; 
+
+  const queryWhere = { projectId: projectId };
+  
+  if (isClient) {
+    queryWhere.showToClient = true;
+  }
+
   const phases = await prisma.projectPhase.findMany({
-    where: { projectId },
+    where: queryWhere,
     orderBy: { startDate: "asc" },
     include: {
       lead: { select: { id: true, legalName: true, profilePhotoUrl: true } },
@@ -51,6 +66,10 @@ export const getProjectPhases = async (projectId) => {
     };
   });
 };
+
+
+
+
 
 export const getPhaseDetails = async (phaseId) => {
   const phase = await prisma.projectPhase.findUnique({
@@ -174,7 +193,8 @@ export const createTaskUpdate = async (taskId, authorId, data) => {
 };
 
 export const getTaskUpdates = async (taskId) => {
-  return await prisma.taskUpdate.findMany({
+
+  const updates = await prisma.taskUpdate.findMany({
     where: { taskId },
     orderBy: { createdAt: "desc" },
     include: {
@@ -183,15 +203,22 @@ export const getTaskUpdates = async (taskId) => {
           employeeProfile: {
             select: { legalName: true, profilePhotoUrl: true },
           },
+          clientProfile: {
+            select: { contactName: true, companyName: true, logoUrl: true },
+          },
         },
       },
       replies: {
         orderBy: { createdAt: "asc" },
         include: {
-        author: {
+          author: {
             select: {
-              employeeProfile: { select: { legalName: true, profilePhotoUrl: true } },
-              clientProfile: { select: { contactName: true, companyName: true, logoUrl: true } }, 
+              employeeProfile: { 
+                select: { legalName: true, profilePhotoUrl: true } 
+              },
+              clientProfile: { 
+                select: { contactName: true, companyName: true, logoUrl: true } 
+              }, 
             },
           },
         },

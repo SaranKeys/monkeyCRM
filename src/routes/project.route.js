@@ -53,4 +53,11 @@ router.get(
   projectController.getProjectActivity
 );
 
+router.get(
+  "/:projectId/glance",
+  authenticate,
+  checkPermission("Projects", "viewProjects", true), 
+  projectController.getProjectGlance
+);
+
 export default router;

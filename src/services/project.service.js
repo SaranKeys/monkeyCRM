@@ -279,3 +279,68 @@ export const updateProject = async (projectId, updateData) => {
     },
   });
 };
+
+
+export const getProjectGlanceStats = async (projectId, user) => {
+  const isClient = user.role === "CLIENT";
+
+  const project = await prisma.project.findUnique({
+    where: { id: projectId },
+    select: { estimatedHours: true },
+  });
+
+  if (!project) throw new Error("Project not found");
+
+  const [tasks, openTicketsCount, updatesCount] = await Promise.all([
+
+    prisma.phaseTask.findMany({
+      where: {
+        phase: { projectId: projectId }
+      },
+      select: {
+        status: true,
+        estimatedHours: true,
+        loggedHours: true
+      }
+    }),
+
+    prisma.ticket.count({
+      where: {
+        projectId: projectId,
+        status: { in: ["OPEN", "IN_PROGRESS", "IN_REVIEW"] }
+      }
+    }),
+
+    prisma.projectUpdate.count({
+      where: {
+        projectId: projectId,
+        ...(isClient ? { clientView: true } : {}) 
+      }
+    })
+  ]);
+
+  let doneTasks = 0;
+  let loggedHours = 0;
+  let taskEstimatedHours = 0;
+
+  tasks.forEach(task => {
+    if (task.status === "DONE") doneTasks++;
+    loggedHours += (task.loggedHours || 0);
+    taskEstimatedHours += (task.estimatedHours || 0);
+  });
+
+  const finalEstimatedHours = project.estimatedHours || taskEstimatedHours;
+
+  return {
+    tasks: {
+      done: doneTasks,
+      total: tasks.length
+    },
+    openTickets: openTicketsCount,
+    updates: updatesCount,
+    hours: {
+      logged: loggedHours,
+      estimated: finalEstimatedHours
+    }
+  };
+};

@@ -523,6 +523,8 @@ model ProjectPhase {
   leadId         String?         @db.ObjectId
   lead           EmployeeProfile? @relation("PhaseLead", fields: [leadId], references: [id])
 
+  showToClient   Boolean    @default(false)
+
   subPhases      PhaseSubPhase[]
   tasks          PhaseTask[]
 

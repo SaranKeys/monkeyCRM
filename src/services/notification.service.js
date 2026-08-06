@@ -1,11 +1,16 @@
 import webpush from 'web-push';
 import prisma from '../config/prisma.js';
 
-webpush.setVapidDetails(
-    'mailto:saranjeet@promonkey.tech', 
-    process.env.VAPID_PUBLIC_KEY,
-    process.env.VAPID_PRIVATE_KEY
-);
+if (process.env.VAPID_PUBLIC_KEY && process.env.VAPID_PRIVATE_KEY) {
+    webpush.setVapidDetails(
+        'mailto:saranjeet@promonkey.tech', 
+        process.env.VAPID_PUBLIC_KEY,
+        process.env.VAPID_PRIVATE_KEY
+    );
+    console.log("✅ VAPID Keys loaded successfully.");
+} else {
+    console.error("🚨 CRITICAL: VAPID keys are missing from process.env! Push disabled.");
+}
 
 export const saveSubscription = async (userId, subscription) => {
     return await prisma.pushSubscription.create({

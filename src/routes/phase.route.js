@@ -33,6 +33,7 @@ router.post(
   checkPermission("Projects", "managePhasesTasks"),
   phaseController.addPhase,
 );
+
 router.get(
   "/project/:projectId",
   checkPermission("Projects", "viewProjects", true),
@@ -126,7 +127,7 @@ router.get(
 // DYNAMIC PHASE PARAM ROUTE
 router.get(
   "/:id",
-  checkPermission("Projects", "viewProjects"),
+  checkPermission("Projects", "viewProjects", true),
   phaseController.getSinglePhase,
 );
 

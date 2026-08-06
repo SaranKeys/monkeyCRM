@@ -13,6 +13,7 @@ export const createPhaseSchema = z.object({
     dueDate: z.coerce.date(),
     priority: PriorityEnum.default("MEDIUM"),
     estimatedHours: z.number().optional().default(0),
+    clientView: z.boolean().optional().default(false),
     leadId: objectIdSchema,
     projectId: objectIdSchema,
   }),

@@ -15,6 +15,9 @@ import {
 } from "../validations/phase.validation.js";
 import * as notificationService from "../services/notification.service.js"; 
 
+
+
+
 export const addPhase = async (req, res) => {
   try {
     const validation = createPhaseSchema.safeParse(req);
@@ -40,12 +43,17 @@ export const addPhase = async (req, res) => {
 
 export const getPhases = async (req, res) => {
   try {
-    const phases = await phaseService.getProjectPhases(req.params.projectId);
+    const phases = await phaseService.getProjectPhases(req.params.projectId, req.user);
+
     return res.status(200).json({ status: "success", data: phases });
   } catch (error) {
     return res.status(500).json({ status: "fail", message: error.message });
   }
 };
+
+
+
+
 
 export const getSinglePhase = async (req, res) => {
   try {
@@ -455,13 +463,16 @@ export const postTaskUpdate = async (req, res) => {
   }
 };
 
+
 export const fetchTaskUpdates = async (req, res) => {
+
   try {
     const updates = await phaseService.getTaskUpdates(req.params.taskId);
     return res.status(200).json({ status: "success", data: updates });
   } catch (error) {
     return res.status(500).json({ status: "fail", message: error.message });
   }
+
 };
 
 export const postTaskReply = async (req, res) => {

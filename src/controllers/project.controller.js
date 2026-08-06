@@ -281,3 +281,20 @@ export const getProjectActivity = async (req, res) => {
     return res.status(500).json({ status: "fail", message: error.message });
   }
 };
+
+
+export const getProjectGlance = async (req, res) => {
+  try {
+    const stats = await projectService.getProjectGlanceStats(req.params.projectId, req.user);
+    
+    return res.status(200).json({ 
+      status: "success", 
+      data: stats 
+    });
+  } catch (error) {
+    return res.status(500).json({ 
+      status: "fail", 
+      message: error.message 
+    });
+  }
+};
