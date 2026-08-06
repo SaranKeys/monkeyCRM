@@ -84,7 +84,7 @@ router.patch(
 
 router.get(
   "/task/:taskId",
-  checkPermission("Tasks", "viewTasks"),
+  checkPermission("Tasks", "viewTasks", true),
   phaseController.getSingleTask,
 );
 
