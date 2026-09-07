@@ -30,6 +30,9 @@ export const createTicket = async (data, creatorId) => {
     });
 };
 
+
+
+
 // 🔵 GET TICKETS FOR A SPECIFIC PROJECT (For your Lazy-Loaded React Tab!)
 export const getTicketsByProject = async (projectId, page = 1, limit = 10, status) => {
     const skip = (page - 1) * limit;

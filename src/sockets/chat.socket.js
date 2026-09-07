@@ -10,6 +10,12 @@ export const setupChatSocket = (io) => {
             console.log(`User joined project room: ${projectId}`);
         });
 
+        // saarthi specific socket event
+        socket.on('join_saarthi_room', (sessionId) => {
+            socket.join(sessionId);
+            console.log(`[Saarthi] User joined room: ${sessionId}`);
+        });
+
         socket.on('send_message', async (data) => {
             const { projectId, senderId, text } = data;
 

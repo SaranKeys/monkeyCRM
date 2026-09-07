@@ -222,6 +222,9 @@ export const addTask = async (req, res) => {
   }
 };
 
+
+
+
 export const editTask = async (req, res) => {
   try {
     if (req.body.assigneeId === "") req.body.assigneeId = null;
@@ -441,6 +444,9 @@ export const removeTask = async (req, res) => {
   }
 };
 
+
+
+
 export const postTaskUpdate = async (req, res) => {
   try {
     const validation = createTaskUpdateSchema.safeParse(req);
@@ -479,6 +485,12 @@ export const fetchTaskUpdates = async (req, res) => {
     return res.status(500).json({ status: "fail", message: error.message });
   }
 };
+
+
+
+
+
+
 
 export const postTaskReply = async (req, res) => {
   try {
@@ -565,6 +577,10 @@ export const getSingleTask = async (req, res) => {
   }
 };
 
+
+
+
+
 export const uploadEditorFile = async (req, res) => {
   try {
     if (!req.file) {
@@ -591,6 +607,11 @@ export const uploadEditorFile = async (req, res) => {
     return res.status(500).json({ status: "fail", message: error.message });
   }
 };
+
+
+
+
+
 
 export const getMyTasks = async (req, res) => {
   try {

@@ -125,6 +125,17 @@ type AdditionalContact {
   tag   String // 'billing', 'technical', 'escalation'
 }
 
+type SaarthiLeadData {
+  status           String  
+  door             String?
+  painStatement    String?
+  sketch           Json?
+  qualification    Json?
+  fitScore         String?
+  summaryForParam  String?
+  conversationId   String
+}
+
 model User {
   id        String   @id @default(auto()) @map("_id") @db.ObjectId
   email     String   @unique
@@ -300,6 +311,29 @@ model ClientProfile {
   updatedAt DateTime @updatedAt
 
   @@map("client_profiles")
+}
+
+// ==========================================
+// SALES & PROSPECTS (CRM)
+// ==========================================
+
+model Lead {
+  id          String   @id @default(auto()) @map("_id") @db.ObjectId
+  firstName   String
+  email       String
+  phoneE164   String?
+  company     String?
+  
+  // Statuses from your spec: TALKING_TO_SAARTHI, SKETCH_DONE, QUALIFIED, CALL_BOOKED, HANDED_TO_HUMAN, CLOSED_NONE
+  status      String   @default("TALKING_TO_SAARTHI") 
+  
+  // 🟢 This embeds the AI's intelligence directly into the CRM Lead
+  saarthi     SaarthiLeadData? 
+  
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@map("leads")
 }
 
 model CompanyRole {
@@ -702,4 +736,261 @@ model PushSubscription {
   createdAt DateTime @default(now())
 
   @@map("push_subscriptions")
+}
+
+
+// ==========================================
+// SAARTHI ENUMS & COMPOSITE TYPES (MONGODB)
+// ==========================================
+
+enum SaarthiConfigStatus {
+  DRAFT
+  PUBLISHED
+  ARCHIVED
+}
+
+enum SaarthiStage {
+  GATE
+  DIAGNOSE
+  REFRAME
+  QUALIFY
+  CLOSE
+  ENDED
+}
+
+type SaarthiVisitorData { // All the info about the human talking to the bot.
+  firstName      String?
+  email          String?
+  phoneE164      String?
+  company        String?
+  country        String?
+  tz             String?
+  ipHash         String
+  userAgent      String
+  freeMail       Boolean?
+  existingClient Boolean?
+  whatsappOptIn  Boolean  @default(false)
+}
+
+type SaarthiTurnLLM { // tracks exactly what happened under the hood for one single message
+  modelKey      String
+  provider      String
+  promptVersion Int
+  tokensIn      Int
+  tokensOut     Int
+  costINR       Float
+  latencyMs     Int
+  fallbackUsed  Boolean
+}
+
+type SaarthiGuardrailHit { // A log of every time the AI (or the user) broke a safety rule
+  guardrailKey String // which rule was broken, e.g., "price_mention_limit
+  version      Int
+  scope        String // 'input' | 'output'
+  action       String
+  matched      String?
+  severity     String
+  at           DateTime
+}
+
+type SaarthiTurn { // One single message in the chat history
+  id            String   @default(uuid())
+  at            DateTime @default(now())
+  channel       String   // 'web' | 'whatsapp' | 'email' | 'admin'
+  role          String   // 'visitor' | 'saarthi' | 'system' | 'human_agent'
+  text          String
+  stageAtTurn   String
+  extraction    Json?    // Validated JSON from LLM
+  llm           SaarthiTurnLLM?
+  guardrailHits SaarthiGuardrailHit[]
+  rewrittenFrom String?
+}
+
+type SaarthiConfigSnapshot { // stores the exact version numbers of the rules they started with
+  personaV          Int?
+  settingsV         Int?
+  fitRuleV          Int?
+  modelAssignmentV  Int?
+  promptVersions    Json?
+  guardrailVersions Json?
+  icpVersions       Json?
+  doorVersions      Json?
+  offerVersions     Json?
+}
+
+type SaarthiTelemetry { // total stats for the entire conversation combined
+  tokensIn      Int @default(0)
+  tokensOut     Int @default(0)
+  costINR       Float @default(0)
+  durationS     Float @default(0)
+  llmCalls      Int @default(0)
+  avgLatencyMs  Int @default(0)
+  guardrailHits SaarthiGuardrailHit[]
+  dropOffStage  String?
+}
+
+// ==========================================
+// SAARTHI CORE MODELS
+// ==========================================
+
+model SaarthiModel { // A list of all the AI models you can plug in
+  id                String   @id @default(auto()) @map("_id") @db.ObjectId
+  key               String   @unique
+  provider          String   // 'anthropic' | 'openai' | 'openai_compatible' | 'ollama'
+  modelId           String
+  baseUrl           String?
+  apiKeyRef         String?  // Reference to secret manager
+  params            Json
+  supportsStreaming Boolean  @default(true)
+  supportsJsonMode  Boolean  @default(false)
+  contextWindow     Int
+  costPer1MInput    Float
+  costPer1MOutput   Float
+  costCurrency      String   @default("USD")
+  enabled           Boolean  @default(true)
+  healthStatus      String   @default("unknown")
+  lastHealthCheckAt DateTime?
+  notes             String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  createdBy String   @default("system")
+
+  @@map("saarthi_models")
+}
+
+model SaarthiPersona { // How the AI behaves. You can have multiple drafts, but only one live persona
+  id                     String              @id @default(auto()) @map("_id") @db.ObjectId
+  version                Int
+  status                 SaarthiConfigStatus @default(DRAFT)
+  name                   String
+  displayName            String
+  roleTitle              String
+  openingLine            String
+  aiDisclosure           String
+  warmth                 Int
+  humour                 Int
+  directness             Int
+  formality              Int
+  curiosity              Int
+  maxSentencesPerMessage Int                 @default(4)
+  maxQuestionsPerMessage Int                 @default(1)
+  questionsBudget        Json                // { diagnose: 4, qualify: 3 }
+  reflectEveryNMessages  Int                 @default(2)
+  nameUsage              String              @default("sparingly")
+  languagePolicy         Json
+  emojiPolicy            String              @default("none")
+  jargonPolicy           String              @default("only_if_visitor_technical")
+  humourScope            String[]
+  humourForbidden        String[]
+  signOff                String
+  customDirectives       String[]
+  voiceSamples           Json[]              // Array of { visitor, saarthi }
+
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  createdBy   String
+  publishedAt DateTime?
+  publishedBy String?
+  changeNote  String?
+
+  @@map("saarthi_personas")
+}
+
+model SaarthiGuardrail { // strict rules to keep the AI from messing up
+  id                   String              @id @default(auto()) @map("_id") @db.ObjectId
+  key                  String
+  version              Int
+  status               SaarthiConfigStatus @default(DRAFT)
+  label                String
+  description          String
+  enabled              Boolean             @default(true)
+  scope                String              // 'input' | 'output' | 'both'
+  kind                 String              // 'keyword' | 'regex' | 'classifier' | 'llm_judge' | 'counter' | 'composite'
+  config               Json
+  action               String              // 'block_replace' | 'rewrite' | 'soft_steer' | 'escalate' | 'redact' | 'log_only'
+  severity             String              // 'low' | 'medium' | 'high' | 'critical'
+  replacementTemplateId String?
+  rewriteInstruction   String?
+  order                Int
+  stopOnHit            Boolean             @default(true)
+  testCases            Json[]
+  category             String
+
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  createdBy   String
+  publishedAt DateTime?
+  publishedBy String?
+  changeNote  String?
+
+  @@map("saarthi_guardrails")
+}
+
+model SaarthiConversation { // master file for a single visitor's chat
+  id                 String                @id @default(auto()) @map("_id") @db.ObjectId
+  sessionId          String                @unique
+  leadId             String?               @db.ObjectId // Optional link to OS Lead
+  visitor            SaarthiVisitorData
+  stage              SaarthiStage          @default(GATE)
+  endedReason        String?
+  door               String?
+  doorConfidence     Float?
+  painStatement      Json?                 // { text, confirmed }
+  sketch             Json?                 // { changes, humanStep, plugsInto, accepted }
+  qualification      Json?                 // { timeline, decisionMaker, budgetSignal, funnel, funnelConfidence }
+  fit                Json?                 // { score, ruleVersion, routedToUserId, explanation }
+  pricing            Json?                 // { anchorQuoted, pilotQuoted, timesMentioned }
+  briefs             Json?                 // { light: {}, full: {} }
+  booking            Json?                 // { slot, ownerUserId, calendarEventId, noShowCount }
+  
+  escalated          Boolean               @default(false)
+  escalationReason   String?
+  takenOverByUserId  String?               @db.ObjectId
+  takenOverAt        DateTime?
+  
+  turns              SaarthiTurn[]         // Embedded array for insane read/write speeds
+  configSnapshot     SaarthiConfigSnapshot
+  telemetry          SaarthiTelemetry
+  
+  summaryForParam    String?
+  flags              Json                  // { reviewed, rating, reviewerNote, isTestSandbox }
+  tags               String[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  createdBy String   @default("system")
+
+  @@map("saarthi_conversations")
+}
+
+model SaarthiAuditLog {
+  id          String   @id @default(auto()) @map("_id") @db.ObjectId
+  at          DateTime @default(now())
+  userId      String   @db.ObjectId
+  action      String
+  entity      String
+  entityId    String   @db.ObjectId
+  fromVersion Int?
+  toVersion   Int?
+  diff        Json?
+  ip          String?
+
+  @@map("saarthi_audit_logs")
+}
+
+
+model SaarthiModelAssignment {
+  id          String              @id @default(auto()) @map("_id") @db.ObjectId
+  version     Int                 @default(1)
+  status      SaarthiConfigStatus @default(PUBLISHED)
+  roles       Json                // { brain: { primaryModelKey: "gemini-primary", fallbackModelKeys: [] } }
+  changeNote  String?
+  publishedAt DateTime?           @default(now())
+  publishedBy String?
+
+  createdAt   DateTime            @default(now())
+  updatedAt   DateTime            @updatedAt
+
+  @@map("saarthi_model_assignments")
 }

@@ -25,6 +25,7 @@ async function startServer() {
                 methods: ["GET", "POST"]
             }
         });
+        app.set('io', io);
 
         setupChatSocket(io);
 

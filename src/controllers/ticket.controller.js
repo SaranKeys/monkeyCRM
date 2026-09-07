@@ -6,6 +6,9 @@ import {
   updateTicketSchema,
 } from "../validations/ticket.validation.js";
 
+
+
+
 export const createTicket = async (req, res) => {
   try {
     const validationResult = createTicketSchema.safeParse(req);
@@ -54,6 +57,12 @@ export const createTicket = async (req, res) => {
     return res.status(500).json({ status: "fail", message: error.message });
   }
 };
+
+
+
+
+
+
 
 export const getProjectTickets = async (req, res) => {
   try {

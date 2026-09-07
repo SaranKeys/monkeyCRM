@@ -5,7 +5,6 @@ import { changePasswordSchema, forgotPasswordSchema, loginSchema, resetPasswordS
 import { authenticate } from '../middlewares/auth.middleware.js';
 
 const router = Router();
-
 router.post(
     '/login', 
     validateRequest(loginSchema), 

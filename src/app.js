@@ -16,6 +16,8 @@ import phaseRoutes from "./routes/phase.route.js"
 import chatRoutes from "./routes/chat.route.js"
 import fileRoutes from "./routes/file.route.js"
 import notificationRouter from "./routes/notification.route.js"
+import saarthiRoutes from "./routes/saarthi/saarthi.route.js"
+import adminSaarthiRoutes from "./routes/saarthi/admin.saarthi.route.js"
 
 const app = express();
 
@@ -34,6 +36,8 @@ app.get('/health', (req, res) => {
     });
 });
 
+
+
 app.use('/api/auth', authRoutes);
 app.use('/api/employees', employeeRoutes);
 app.use('/api/clients', clientRoutes);
@@ -47,6 +51,10 @@ app.use('/api/phases', phaseRoutes);
 app.use('/api/chat', chatRoutes);
 app.use('/api/files', fileRoutes);
 app.use('/api/notifications', notificationRouter)
+
+// saarthi
+app.use('/api/saarthi', saarthiRoutes); 
+app.use('/api/admin/saarthi', adminSaarthiRoutes);
 
 app.use(notFoundHandler);
 app.use(globalErrorHandler);
